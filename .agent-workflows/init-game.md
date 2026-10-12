@@ -126,6 +126,23 @@ If the game is touch-first, pointer-heavy, typing-heavy, drawing-based, menu-hea
 
 Document the control scheme in the wiki and expose it in the game's controls/settings UI when useful.
 
+When gamepad-style controls make sense, include a virtual gamepad for touch devices by default. Enable it by default only on likely mobile/tablet touch devices, and disable it by default on desktop. Provide a settings menu toggle so the user can show or hide it.
+
+Choose the virtual gamepad layout based on the game using common mobile conventions: movement on the left thumb area, actions on the right thumb area, and pause/settings reachable without covering critical gameplay. Virtual controls must not hide important HUD, menus, or gameplay information.
+
+If the game is a poor fit for physical gamepad support, apply the same caution to the virtual gamepad. Ask the human developer whether and how virtual controls should work instead of forcing them.
+
+## Settings Menu
+
+Playable games should include an in-game settings menu by default. The settings entry point should be visible but unobtrusive, preferably a gear icon button with an accessible label/title.
+
+The default settings menu should include:
+
+- Fullscreen toggle/action where the browser supports it.
+- Virtual gamepad toggle when virtual controls are applicable.
+
+Handle unsupported or restricted fullscreen behavior gracefully, especially on mobile browsers.
+
 ## Game Scaffold Preferences
 
 Prefer a scalable file layout under `game/` instead of a single large HTML file. A typical browser-native starter might include:

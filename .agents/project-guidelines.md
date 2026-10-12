@@ -27,6 +27,8 @@ When a third-party browser library is needed, prefer downloading or vendoring a 
 
 Include a fullscreen option in playable game builds unless the user asks otherwise.
 
+Playable games should include an in-game settings menu by default. The settings entry point should be visible but unobtrusive, preferably a gear icon button with an accessible label/title. By default, include fullscreen and virtual gamepad controls in this menu when those features apply.
+
 ## Responsive Game Viewport
 
 The game should be the primary page experience and should use as much of the browser viewport as is feasible. Avoid presenting the game as a small fixed-size canvas or panel centered on an otherwise empty page unless the user explicitly asks for that style.
@@ -57,6 +59,14 @@ Gamepad support should usually be additive alongside keyboard, mouse, pointer, a
 If the game is touch-first, pointer-heavy, typing-heavy, drawing-based, menu-heavy, or otherwise a poor fit for gamepad controls, ask the human developer whether and how gamepad support should work instead of forcing a weak mapping.
 
 Document the control scheme in the wiki and expose it in the game's controls/settings UI when useful.
+
+When gamepad-style controls make sense, include a virtual gamepad for touch devices by default. It should be enabled by default only on likely mobile/tablet touch devices, and disabled by default on desktop. Provide a settings menu toggle so the user can show or hide it.
+
+Choose the virtual gamepad layout based on the game using common mobile conventions: movement on the left thumb area, actions on the right thumb area, and pause/settings reachable without covering critical gameplay. Virtual controls must not hide important HUD, menus, or gameplay information.
+
+If the game is a poor fit for physical gamepad support, apply the same caution to the virtual gamepad. Ask the human developer whether and how virtual controls should work instead of forcing them.
+
+Fullscreen should be available from the settings menu where the browser supports it. Handle unsupported or restricted fullscreen behavior gracefully, especially on mobile browsers.
 
 ## Local Preview Server
 

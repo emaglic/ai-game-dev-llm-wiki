@@ -88,6 +88,16 @@ Agents can choose the exact mapping that fits the game. Common defaults are left
 
 Gamepad controls should usually be additive alongside keyboard, mouse, pointer, and touch controls. If the game concept is a poor fit for gamepad controls, the agent should ask whether and how you want gamepad support handled.
 
+When gamepad-style controls make sense, agents should also include a virtual gamepad for touch devices. It should be enabled by default only on likely mobile/tablet devices, disabled by default on desktop, and adjustable from the game's settings menu.
+
+Virtual controls should follow common mobile game conventions: movement on the left side, actions on the right side, and pause/settings reachable without covering important gameplay or HUD information.
+
+## Settings Menu
+
+Playable games should include a settings menu by default, preferably opened with a small gear icon button with an accessible label/title.
+
+By default, the settings menu should include fullscreen and virtual gamepad controls when applicable. Fullscreen should work where the browser supports it and degrade gracefully where it does not, especially on mobile browsers.
+
 ## Running The Game
 
 You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.

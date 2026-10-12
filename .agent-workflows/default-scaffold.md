@@ -85,6 +85,16 @@ If the game concept is a poor fit for gamepad controls, ask the human developer 
 
 Document the chosen control scheme in the wiki and, when useful, in the game's controls/settings UI.
 
+When gamepad-style controls make sense, include a virtual gamepad for touch devices. It should be enabled by default only on likely mobile/tablet touch devices, disabled by default on desktop, and controlled by a settings menu toggle.
+
+Use common mobile game conventions for the default virtual layout: movement on the left thumb area, action buttons on the right thumb area, and pause/settings reachable without covering important gameplay or HUD information.
+
+## Settings Menu Defaults
+
+Playable starters should include an in-game settings menu by default. Prefer a small gear icon button with an accessible label/title.
+
+Include fullscreen and virtual gamepad controls by default when applicable. Fullscreen should degrade gracefully when the browser does not support it or restricts it.
+
 ## Preview Server
 
 When asked to run, play, test, or preview the game, agents should serve `game/` locally and report the URL. They should reuse an existing valid preview server recorded in `.agents/runtime/preview-server.json` instead of opening a new port on each run.
