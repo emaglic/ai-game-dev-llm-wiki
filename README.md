@@ -12,9 +12,23 @@ The goal is to give coding agents durable project context through a local wiki w
 - `wiki/activity/`: per-session agent activity logs for non-blocking coordination.
 - `temp/`: ephemeral files shared with agents, such as screenshots or throwaway notes.
 - `.codex/skills/init-game/`: the repo-scoped Codex skill for initializing or revising a game project.
+- `.agent-workflows/`: provider-neutral agent workflows shared by Codex, Claude, Gemini, and other tools.
 - `.agents/`: shared agent-facing project conventions.
 - `.agents/locks/`: coordination locks for agent work, including game-code write locks.
 - `.agents/runtime/`: ignored runtime state, such as the current local preview server.
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`: provider-specific entry files that point agents to the shared project guidelines.
+
+## Agent Provider Support
+
+This template includes lightweight entry files for multiple coding agents:
+
+- `AGENTS.md` for Codex-compatible agents.
+- `CLAUDE.md` for Claude Code.
+- `GEMINI.md` for Gemini CLI.
+
+The shared source of truth for general agent behavior is `.agents/project-guidelines.md`. Provider-neutral task workflows live in `.agent-workflows/`.
+
+Provider-specific files should stay short and point to the shared guidelines/workflows so the project does not grow competing instruction sets. Outside Codex, `/init-game` should be treated as a plain-text request to follow `.agent-workflows/init-game.md`, not as a reason to create a native command or skill.
 
 ## Initializing A Game
 

@@ -2,6 +2,10 @@
 
 This repository is a reusable template for AI-assisted browser game development.
 
+This is the canonical shared instruction file for agents. Provider-specific entry files such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` should point here instead of duplicating these rules.
+
+Provider-neutral workflows live in `.agent-workflows/`. Treat workflow names such as `/init-game` as plain-text triggers outside providers that natively support them. Do not create provider-specific commands, skills, memory files, or workflow systems unless the user explicitly asks for that provider integration.
+
 Agents should treat root-level directories as having distinct ownership:
 
 - `assets/` is the human developer's source asset inbox. Read from it, but do not mutate it.
