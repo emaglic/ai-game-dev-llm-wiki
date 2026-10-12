@@ -107,6 +107,14 @@ Do not squash, stretch, or crop gameplay to fill the screen. Scale the game as l
 
 Menus, HUD, buttons, and gameplay-critical UI must remain visible, reachable, and usable within the available viewport.
 
+## Iframe Compatibility
+
+When practical, make games friendly to iframe embedding for sites such as itch.io or a human developer's website. Treat this as a secondary compatibility goal, not something that should weaken the primary native-ish full-viewport game experience.
+
+Prefer sizing the game from its own root container when reasonable so it adapts inside an iframe as well as in the top-level browser window. Do not depend on parent-page scripts or cross-origin parent access.
+
+Handle iframe limitations gracefully. Fullscreen may require iframe permissions or may be blocked by the browser. Menus, HUD, touch controls, and gameplay should remain reachable within the iframe bounds when embedded at practical sizes.
+
 ## Input And Gamepad Support
 
 Include gamepad support by default for most games, using the browser Gamepad API and an Xbox-style controller layout as the baseline.

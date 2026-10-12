@@ -75,6 +75,12 @@ Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is help
 
 Menus, HUD, buttons, and gameplay-critical UI should remain visible, reachable, and usable on desktop, tablet, and mobile. If the user's game concept suggests a portrait, square, ultrawide, or otherwise specialized format, propose that aspect ratio and let the user guide the choice.
 
+## Iframe Compatibility
+
+When practical, design the game shell so it can also run inside an iframe. This is a nice-to-have compatibility goal and should not make the standalone game feel less like a polished full-viewport app.
+
+Prefer sizing from the game's own root container instead of assuming top-level page dimensions. Avoid relying on parent-page scripts or cross-origin parent access. Handle fullscreen restrictions gracefully when embedded.
+
 ## Input Defaults
 
 For most games, include a browser Gamepad API input path in addition to keyboard, mouse, pointer, or touch controls as appropriate.

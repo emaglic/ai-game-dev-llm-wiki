@@ -80,6 +80,14 @@ Agents should avoid tiny fixed-size game windows unless you explicitly ask for t
 
 Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is useful. It is not a hard rule: portrait games may use 9:16, square games may use 1:1, and other formats can be chosen based on the game. The game should preserve its aspect ratio and use letterboxing or pillarboxing when needed instead of stretching, squashing, or cropping.
 
+## Iframe Compatibility
+
+Games should be iframe-friendly when practical, so they can later be embedded on a personal site, itch.io, or another host.
+
+This is a secondary goal. The default experience should still feel like a polished full-viewport game or app. Iframe support should not cause agents to design the game as a tiny widget.
+
+Agents should avoid depending on parent-page scripts or cross-origin parent access, and fullscreen should degrade gracefully when iframe permissions or browser restrictions prevent it.
+
 ## Input And Gamepads
 
 Most games built from this template should include gamepad support by default, using the browser Gamepad API and an Xbox-style controller layout as the baseline.

@@ -41,6 +41,14 @@ Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is usef
 
 Do not squash, stretch, or crop gameplay to fill the screen. On screens that do not match the target aspect ratio, scale the game as large as possible while preserving aspect ratio, using letterboxing or pillarboxing when needed.
 
+## Iframe Compatibility
+
+When practical, make games friendly to iframe embedding for sites such as itch.io or a human developer's website. This is a secondary compatibility goal and must not compromise the primary goal of making the standalone game feel like a polished, native-ish full-viewport app.
+
+Prefer sizing the game from its own root container when reasonable so it adapts inside an iframe as well as in the top-level browser window. Do not depend on parent-page scripts or cross-origin parent access.
+
+Handle iframe limitations gracefully. Fullscreen may require iframe permissions or may be blocked by the browser. Menus, HUD, touch controls, and gameplay should remain reachable within the iframe bounds when embedded at practical sizes.
+
 ## Input And Gamepad Support
 
 Include gamepad support by default for most games, using the browser Gamepad API and an Xbox-style controller layout as the baseline.
