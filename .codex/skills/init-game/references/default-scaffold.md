@@ -21,7 +21,11 @@ Keep the initial wiki concise. Empty headings are less useful than short, honest
 
 Create `wiki/activity/` for per-session activity logs. Keep `.agents/locks/` available for coordination locks, including `.agents/locks/game-write.lock` when an agent is actively editing files under `game/`.
 
+Keep `.agents/runtime/` available for local runtime metadata such as `.agents/runtime/preview-server.json`. Runtime metadata and active lock files should be ignored by git, while `.gitkeep` placeholders may be committed to preserve the template directories.
+
 Do not create an active game write lock during first initialization unless the agent is about to edit game files as part of that same task. Remove the lock when game-code edits are complete.
+
+Do not create a preview server record during first initialization unless an agent actually starts a local preview server.
 
 ## Starter Game Files
 
@@ -56,6 +60,12 @@ import { Game } from "./game.js";
 ```
 
 Document that browser ES modules generally need a static server. Do not require NodeJS. Suggest options such as Python's built-in HTTP server, VS Code Live Server, or any equivalent static server.
+
+## Preview Server
+
+When asked to run, play, test, or preview the game, agents should serve `game/` locally and report the URL. They should reuse an existing valid preview server recorded in `.agents/runtime/preview-server.json` instead of opening a new port on each run.
+
+If no valid server is running, start one rooted at `game/`, preferring Python or another non-Node static server when available. Record the root, URL, port, start time, and command in `.agents/runtime/preview-server.json`.
 
 ## PWA Defaults
 

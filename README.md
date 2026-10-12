@@ -14,6 +14,7 @@ The goal is to give coding agents durable project context through a local wiki w
 - `.codex/skills/init-game/`: the repo-scoped Codex skill for initializing or revising a game project.
 - `.agents/`: shared agent-facing project conventions.
 - `.agents/locks/`: coordination locks for agent work, including game-code write locks.
+- `.agents/runtime/`: ignored runtime state, such as the current local preview server.
 
 ## Initializing A Game
 
@@ -42,6 +43,14 @@ import { Game } from "./game.js";
 Because browser modules usually need to be served over HTTP, run the game with any simple static server. NodeJS is optional. Python's built-in server, VS Code Live Server, or another static server is enough for the no-build starting point.
 
 NodeJS may become useful later for bundling, TypeScript, asset pipelines, or packaging the game as a desktop executable with Electron.
+
+## Running The Game
+
+You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.
+
+Agents should reuse an existing preview server when one is already running instead of starting a new server every time. Runtime server state belongs in `.agents/runtime/preview-server.json`, which is ignored by git.
+
+The default preference is a non-Node static server, such as Python's built-in HTTP server, because NodeJS is not required by this template.
 
 
 ## Concurrent Agent Sessions

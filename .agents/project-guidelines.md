@@ -19,6 +19,37 @@ Use a modular file structure under `game/` and avoid placing all gameplay logic 
 
 Include a fullscreen option in playable game builds unless the user asks otherwise.
 
+## Local Preview Server
+
+When the user asks to run, play, test, or preview the game, serve the `game/` directory with a local static server and tell the user the URL.
+
+After meaningful game changes, an agent may also start or reuse the preview server so the user can test immediately. Do not start a new server if a suitable one is already running.
+
+Use `.agents/runtime/preview-server.json` for local preview server state. This file is runtime metadata and should not be committed.
+
+Before starting a server:
+
+- Check whether `.agents/runtime/preview-server.json` exists.
+- If it exists, verify that the recorded URL still responds and that it points at this repo's `game/` directory.
+- If the existing server is valid, reuse it and report the URL.
+- If no valid server is running, start one rooted at `game/`.
+
+Prefer non-Node options first because this template does not assume NodeJS is installed. Python's built-in static server is a good first choice when available. If the preferred port is busy, choose another available localhost port and record it.
+
+The runtime record should include at least:
+
+```json
+{
+  "root": "game",
+  "url": "http://localhost:8000/",
+  "port": 8000,
+  "started_at": "YYYY-MM-DDTHH:MM:SS-07:00",
+  "command": "python -m http.server 8000 -d game"
+}
+```
+
+Provide the user a clickable localhost URL. Only launch the default browser when the user asks for it or grants permission.
+
 ## Concurrency
 
 This template supports multiple agent sessions working in the same repository. Use optimistic coordination for wiki and documentation work, and an exclusive lock for game-code writes.

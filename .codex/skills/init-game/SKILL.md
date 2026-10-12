@@ -17,6 +17,7 @@ This repository is a template for AI-assisted browser game development. Its defa
 - `wiki/activity/`: per-session activity logs for non-blocking coordination between agents.
 - `.agents/`: shared agent-facing conventions for this template.
 - `.agents/locks/`: coordination locks, including the game write lock.
+- `.agents/runtime/`: ignored runtime state, including local preview server metadata.
 
 
 ## Concurrency Protocol
@@ -32,6 +33,16 @@ Use optimistic coordination for wiki and documentation work, and an exclusive lo
 - If the lock is older than 2 hours or appears abandoned, report the lock details and ask the user for permission before clearing, replacing, bypassing, or editing under `game/`.
 - Release the game write lock after completing or pausing game-code edits.
 - Even while holding the lock, reread any game file whose OS last modified timestamp changed since you last read it.
+
+## Local Preview Server
+
+When the user asks to run, play, test, or preview the game, serve the `game/` directory with a local static server and tell the user the localhost URL. After meaningful game changes, start or reuse a preview server when useful so the user can test the latest build.
+
+Do not start a new server if a suitable preview server is already running. Check `.agents/runtime/preview-server.json` first. If it exists, verify that the recorded URL still responds and points at this repo's `game/` directory. Reuse a valid server and report its URL.
+
+If no valid preview server is running, start one rooted at `game/`. Prefer a non-Node static server, such as Python's built-in HTTP server, because this template does not require NodeJS. If the preferred port is busy, choose another available localhost port and record it.
+
+Write runtime server state to `.agents/runtime/preview-server.json`; this file is ignored by git. Include the root, URL, port, start time, and command. Provide a clickable localhost URL to the user. Only launch the default browser when the user asks for it or grants permission.
 
 ## Repeated Invocation Guard
 
