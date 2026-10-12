@@ -18,3 +18,49 @@ When using a root asset in the game, copy it into `game/assets/` or an appropria
 Use a modular file structure under `game/` and avoid placing all gameplay logic into one large file.
 
 Include a fullscreen option in playable game builds unless the user asks otherwise.
+
+## Concurrency
+
+This template supports multiple agent sessions working in the same repository. Use optimistic coordination for wiki and documentation work, and an exclusive lock for game-code writes.
+
+### Activity Logs
+
+Each agent session should keep its own activity log in `wiki/activity/`, named with a timestamp and short session label when practical, such as `2026-10-12-1330-init-game.md`.
+
+The activity log should record:
+
+- Session start time.
+- Current task.
+- Files read.
+- Files planned for edit.
+- Files changed.
+- Short handoff notes when the session finishes or pauses.
+
+Before starting substantial work, check recent files in `wiki/activity/` to understand active or recent edits.
+
+### Optimistic File Checks
+
+When editing `wiki/`, `.agents/`, README files, or other documentation, record the file's last modified timestamp when you read it. Before writing, check whether the OS last modified timestamp changed since that read. If it changed, reread the file and fold your changes into the latest version instead of overwriting from stale context.
+
+Use the same reread-before-write habit for game files too, even when holding the game write lock.
+
+### Game Write Lock
+
+Before editing anything under `game/`, acquire `.agents/locks/game-write.lock` using an atomic create operation that fails if the file already exists. Do not overwrite an existing lock.
+
+The lock should contain at least:
+
+```json
+{
+  "session_id": "codex-YYYYMMDD-HHMM-short-label",
+  "created_at": "YYYY-MM-DDTHH:MM:SS-07:00",
+  "task": "Short description of the work",
+  "files": ["game/src/main.js"]
+}
+```
+
+While a game write lock exists, other agents may inspect files and update non-game documentation, but they must not edit `game/`.
+
+If the lock exists, read it and check its age. Treat locks younger than 2 hours as active unless the user says otherwise. If the lock is older than 2 hours or appears abandoned, do not clear, replace, ignore, or bypass it automatically. Report the lock details to the user and ask for permission before clearing or overriding it.
+
+Release the lock after completing or pausing game-code edits. If a session ends prematurely and leaves a stale lock behind, the next agent should follow the stale-lock permission rule above.

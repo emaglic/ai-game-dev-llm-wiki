@@ -14,7 +14,24 @@ This repository is a template for AI-assisted browser game development. Its defa
 - `game/assets/`: runtime copies of any assets selected from root `assets/`.
 - `wiki/`: durable project memory for design, architecture, decisions, plans, and implementation notes.
 - `temp/`: ephemeral handoff files. Do not link to these from durable wiki pages unless the useful information has been copied into `wiki/`.
+- `wiki/activity/`: per-session activity logs for non-blocking coordination between agents.
 - `.agents/`: shared agent-facing conventions for this template.
+- `.agents/locks/`: coordination locks, including the game write lock.
+
+
+## Concurrency Protocol
+
+Use optimistic coordination for wiki and documentation work, and an exclusive lock for game-code writes.
+
+- Before substantial work, check recent session logs in `wiki/activity/`.
+- Keep a per-session activity log in `wiki/activity/` noting the task, files read, files planned for edit, files changed, and handoff notes.
+- When editing wiki or documentation files, record each file's OS last modified timestamp when read. Before writing, check whether it changed. If it changed, reread and merge your changes into the latest version.
+- Before editing anything under `game/`, acquire `.agents/locks/game-write.lock` using an atomic create operation that fails if the file already exists. Do not overwrite an existing lock.
+- While the game write lock exists, other agents may inspect `game/` but must not edit files under it.
+- If the game write lock exists, read it and check its age. Treat locks younger than 2 hours as active unless the user says otherwise.
+- If the lock is older than 2 hours or appears abandoned, report the lock details and ask the user for permission before clearing, replacing, bypassing, or editing under `game/`.
+- Release the game write lock after completing or pausing game-code edits.
+- Even while holding the lock, reread any game file whose OS last modified timestamp changed since you last read it.
 
 ## Repeated Invocation Guard
 

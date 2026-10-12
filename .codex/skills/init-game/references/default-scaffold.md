@@ -13,8 +13,15 @@ Create only the wiki files that are useful for the user's chosen game. For a nor
 - `wiki/level-format.md`: JSON structure for level data when the game has levels, maps, waves, rooms, encounters, or scripted scenes.
 - `wiki/decisions.md`: dated durable decisions with short rationale.
 - `wiki/tasks.md`: current build tasks, open questions, and next useful work.
+- `wiki/activity/`: per-session activity logs used for non-blocking coordination between agents.
 
 Keep the initial wiki concise. Empty headings are less useful than short, honest notes about what is known and unknown.
+
+## Coordination Files
+
+Create `wiki/activity/` for per-session activity logs. Keep `.agents/locks/` available for coordination locks, including `.agents/locks/game-write.lock` when an agent is actively editing files under `game/`.
+
+Do not create an active game write lock during first initialization unless the agent is about to edit game files as part of that same task. Remove the lock when game-code edits are complete.
 
 ## Starter Game Files
 

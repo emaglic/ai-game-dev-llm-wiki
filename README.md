@@ -9,9 +9,11 @@ The goal is to give coding agents durable project context through a local wiki w
 - `assets/`: source assets supplied by the human developer. Agents should read from this folder but should not modify or link to these files directly from the game.
 - `game/`: the runnable browser game. Agents write HTML, CSS, JavaScript, copied runtime assets, and game data here.
 - `wiki/`: durable project memory for game design, architecture, decisions, plans, asset notes, and level/data formats.
+- `wiki/activity/`: per-session agent activity logs for non-blocking coordination.
 - `temp/`: ephemeral files shared with agents, such as screenshots or throwaway notes.
 - `.codex/skills/init-game/`: the repo-scoped Codex skill for initializing or revising a game project.
 - `.agents/`: shared agent-facing project conventions.
+- `.agents/locks/`: coordination locks for agent work, including game-code write locks.
 
 ## Initializing A Game
 
@@ -40,6 +42,15 @@ import { Game } from "./game.js";
 Because browser modules usually need to be served over HTTP, run the game with any simple static server. NodeJS is optional. Python's built-in server, VS Code Live Server, or another static server is enough for the no-build starting point.
 
 NodeJS may become useful later for bundling, TypeScript, asset pipelines, or packaging the game as a desktop executable with Electron.
+
+
+## Concurrent Agent Sessions
+
+This template supports multiple agent sessions working in the same repository.
+
+For wiki and documentation work, agents use optimistic coordination: they keep per-session logs in `wiki/activity/`, check recent activity before starting, and reread files before writing if the OS last modified timestamp changed since they last read them.
+
+For game-code work, agents use a stronger lock: `.agents/locks/game-write.lock`. If that lock exists, another agent should not edit `game/`. If the lock looks stale, the agent should report its age and contents, then ask before clearing or overriding it.
 
 ## Asset Flow
 
