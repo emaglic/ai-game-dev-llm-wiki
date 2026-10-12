@@ -44,6 +44,20 @@ Because browser modules usually need to be served over HTTP, run the game with a
 
 NodeJS may become useful later for bundling, TypeScript, asset pipelines, or packaging the game as a desktop executable with Electron.
 
+## Game File Organization
+
+Game files should be organized into directories under `game/` rather than scattered as loose files. The exact structure can fit the game, but common directories include:
+
+- `src/` or `js/` for first-party JavaScript.
+- `styles/` or `css/` for stylesheets.
+- `assets/` for runtime asset copies.
+- `data/` for levels and other JSON/data files.
+- `vendor/` or `lib/` for third-party browser libraries.
+
+Root-level files such as `index.html`, `manifest.webmanifest`, and `sw.js` are fine when needed.
+
+When a third-party library like Three.js, PixiJS, or a physics engine is used, agents should prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` so the game ships with its dependencies. CDN links should only be used when you explicitly choose that tradeoff.
+
 ## Running The Game
 
 You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.

@@ -82,7 +82,9 @@ Use third-party libraries when they materially help the game:
 - Prefer PixiJS or a similar rendering library for substantial 2D canvas games.
 - Prefer a proven physics library when gameplay needs nontrivial physics.
 
-If the chosen library requires package tooling, explain the tradeoff before adding that dependency. Otherwise prefer CDN or checked-in browser-compatible files for the initial scaffold.
+When a third-party browser library is used, prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` so the game ships with its dependencies. Avoid relying on CDN-hosted scripts for the committed game unless the user explicitly chooses that tradeoff. Record the library name, version, source URL, and license/provenance notes in the wiki.
+
+If the chosen library requires package tooling, explain the tradeoff before adding that dependency. Prefer checked-in browser-compatible library files for the initial scaffold when licensing permits.
 
 ## Wiki Maintenance
 
@@ -109,7 +111,11 @@ Prefer a scalable file layout under `game/` instead of a single large HTML file.
 - `game/src/world.js`
 - `game/src/ui.js`
 - `game/assets/`
+- `game/data/`
+- `game/vendor/`
 
-Adjust the structure to match the actual game. Add a fullscreen control by default unless there is a strong reason not to.
+Adjust the structure to match the actual game. Keep loose files in `game/` to a minimum; entrypoint/runtime files such as `index.html`, `manifest.webmanifest`, and `sw.js` are fine, but JavaScript, CSS, assets, data, and vendored libraries should live in organized subdirectories.
+
+Add a fullscreen control by default unless there is a strong reason not to.
 
 Design level-based games around JSON level data when reasonable so a future level editor can import and export the same format.

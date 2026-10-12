@@ -36,6 +36,7 @@ game/
 |-- index.html
 |-- manifest.webmanifest
 |-- sw.js
+|-- data/
 |-- styles/
 |   `-- main.css
 |-- src/
@@ -44,6 +45,7 @@ game/
 |   |-- input.js
 |   |-- ui.js
 |   `-- world.js
+|-- vendor/
 `-- assets/
 ```
 
@@ -60,6 +62,10 @@ import { Game } from "./game.js";
 ```
 
 Document that browser ES modules generally need a static server. Do not require NodeJS. Suggest options such as Python's built-in HTTP server, VS Code Live Server, or any equivalent static server.
+
+Keep loose files in `game/` to a minimum. Entry files such as `index.html`, `manifest.webmanifest`, and `sw.js` may live at the root; JavaScript, styles, runtime assets, level data, and third-party libraries should live in organized subdirectories.
+
+When a third-party browser library is selected, prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` instead of linking to a CDN. Record the library name, version, source URL, and license/provenance notes in `wiki/assets.md` or `wiki/architecture.md`.
 
 ## Preview Server
 

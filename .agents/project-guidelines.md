@@ -17,6 +17,10 @@ When using a root asset in the game, copy it into `game/assets/` or an appropria
 
 Use a modular file structure under `game/` and avoid placing all gameplay logic into one large file.
 
+Keep `game/` organized with subdirectories such as `src/` or `js/` for first-party JavaScript, `styles/` or `css/` for styles, `assets/` for runtime assets, `data/` for JSON/data files, and `vendor/` or `lib/` for third-party browser libraries. The exact names can fit the game, but avoid scattering loose files in `game/` beyond entrypoint/runtime files such as `index.html`, `manifest.webmanifest`, and `sw.js`.
+
+When a third-party browser library is needed, prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` so the game ships with its dependencies. Avoid relying on CDN-hosted scripts for the committed game unless the user explicitly chooses that tradeoff. Record the library name, version, source URL, and license/provenance notes in the wiki.
+
 Include a fullscreen option in playable game builds unless the user asks otherwise.
 
 ## Local Preview Server
