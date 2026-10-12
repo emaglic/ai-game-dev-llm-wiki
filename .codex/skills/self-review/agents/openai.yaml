@@ -1,0 +1,4 @@
+interface:
+  display_name: "Self Review"
+  short_description: "Review game work against the request, code quality, and template goals."
+  default_prompt: "/self-review"

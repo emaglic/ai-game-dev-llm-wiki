@@ -30,6 +30,8 @@ The shared source of truth for general agent behavior is `.agents/project-guidel
 
 Provider-specific files should stay short and point to the shared guidelines/workflows so the project does not grow competing instruction sets. Outside Codex, `/init-game` should be treated as a plain-text request to follow `.agent-workflows/init-game.md`, not as a reason to create a native command or skill.
 
+The `/self-review` workflow asks an agent to review recent work for request fit, code risks, and this template's native-ish browser game goals. Agents should recommend it after meaningful work or before commits, but should ask before running it and briefly explain what it checks and why it is useful at that moment.
+
 ## Initializing A Game
 
 Use `/init-game` or `$init-game` with Codex to start a new game in this template.

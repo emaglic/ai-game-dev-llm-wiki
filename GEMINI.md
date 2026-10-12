@@ -8,5 +8,7 @@ For durable project context, read the relevant files in `wiki/` before changing 
 
 If the user asks `/init-game`, `init-game`, or asks to initialize or reconfigure the project, follow [`.agent-workflows/init-game.md`](.agent-workflows/init-game.md). Treat `/init-game` as a plain-text workflow trigger in Gemini unless the user explicitly asks for a native Gemini command.
 
+If the user asks `/self-review`, `self-review`, or asks to review recent work, follow [`.agent-workflows/self-review.md`](.agent-workflows/self-review.md). Treat `/self-review` as a plain-text workflow trigger in Gemini unless the user explicitly asks for a native Gemini command.
+
 Do not create provider-specific commands, skills, memory files, or workflow systems unless the user explicitly asks for that provider integration.
 
