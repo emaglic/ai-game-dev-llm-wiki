@@ -72,6 +72,14 @@ Root-level files such as `index.html`, `manifest.webmanifest`, and `sw.js` are f
 
 When a third-party library like Three.js, PixiJS, or a physics engine is used, agents should prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` so the game ships with its dependencies. CDN links should only be used when you explicitly choose that tradeoff.
 
+## Responsive Game Viewport
+
+Games built from this template should make the game the main focus of the page. By default, the game should use as much of the browser viewport as feasible, and fullscreen mode should use the full screen.
+
+Agents should avoid tiny fixed-size game windows unless you explicitly ask for that style. Gameplay, menus, HUD, and controls should adapt for desktop, tablet, and mobile screens without being cut off or unreachable.
+
+Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is useful. It is not a hard rule: portrait games may use 9:16, square games may use 1:1, and other formats can be chosen based on the game. The game should preserve its aspect ratio and use letterboxing or pillarboxing when needed instead of stretching, squashing, or cropping.
+
 ## Running The Game
 
 You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.

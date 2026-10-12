@@ -27,6 +27,18 @@ When a third-party browser library is needed, prefer downloading or vendoring a 
 
 Include a fullscreen option in playable game builds unless the user asks otherwise.
 
+## Responsive Game Viewport
+
+The game should be the primary page experience and should use as much of the browser viewport as is feasible. Avoid presenting the game as a small fixed-size canvas or panel centered on an otherwise empty page unless the user explicitly asks for that style.
+
+Plan gameplay, menus, HUD, and input around multiple screen sizes, including desktop, tablet, and mobile. Fullscreen mode should use the full available screen.
+
+Use responsive layout, resize handling, canvas scaling, CSS viewport units, safe-area insets, and input adaptation as appropriate for the game. The gameplay surface and menus must remain visible, reachable, and usable within the available viewport.
+
+Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is useful, but treat it as a default rather than a hard rule. If the game is naturally portrait, square, ultrawide, or otherwise format-specific, propose a better aspect ratio such as 9:16 and let the human developer guide the choice.
+
+Do not squash, stretch, or crop gameplay to fill the screen. On screens that do not match the target aspect ratio, scale the game as large as possible while preserving aspect ratio, using letterboxing or pillarboxing when needed.
+
 ## Local Preview Server
 
 When the user asks to run, play, test, or preview the game, serve the `game/` directory with a local static server and tell the user the URL.

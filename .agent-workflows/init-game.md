@@ -95,6 +95,18 @@ During initialization and later project work, update the wiki only for durable c
 
 Do not dump transient debugging notes, command output, or temporary file paths into the wiki.
 
+## Responsive Game Viewport
+
+The game should be the primary page experience and should use as much of the browser viewport as is feasible. Avoid creating a small fixed-size canvas or game panel centered on an otherwise empty page unless the user explicitly asks for that style.
+
+Plan gameplay, menus, HUD, and input for desktop, tablet, and mobile. Fullscreen mode should use the full available screen.
+
+Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is useful, but do not treat it as mandatory. If the game is naturally portrait, square, ultrawide, or otherwise format-specific, propose a more suitable aspect ratio such as 9:16 and let the human developer guide the choice.
+
+Do not squash, stretch, or crop gameplay to fill the screen. Scale the game as large as possible while preserving aspect ratio, using letterboxing or pillarboxing when the viewport does not match the target ratio.
+
+Menus, HUD, buttons, and gameplay-critical UI must remain visible, reachable, and usable within the available viewport.
+
 ## Game Scaffold Preferences
 
 Prefer a scalable file layout under `game/` instead of a single large HTML file. A typical browser-native starter might include:

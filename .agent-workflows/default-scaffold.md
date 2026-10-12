@@ -67,6 +67,14 @@ Keep loose files in `game/` to a minimum. Entry files such as `index.html`, `man
 
 When a third-party browser library is selected, prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` instead of linking to a CDN. Record the library name, version, source URL, and license/provenance notes in `wiki/assets.md` or `wiki/architecture.md`.
 
+## Responsive Viewport Defaults
+
+Design the initial game shell so the game is the primary page experience and uses as much of the available browser viewport as feasible.
+
+Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is helpful. Preserve aspect ratio when scaling, and use letterboxing or pillarboxing on mismatched screens instead of stretching or cropping.
+
+Menus, HUD, buttons, and gameplay-critical UI should remain visible, reachable, and usable on desktop, tablet, and mobile. If the user's game concept suggests a portrait, square, ultrawide, or otherwise specialized format, propose that aspect ratio and let the user guide the choice.
+
 ## Preview Server
 
 When asked to run, play, test, or preview the game, agents should serve `game/` locally and report the URL. They should reuse an existing valid preview server recorded in `.agents/runtime/preview-server.json` instead of opening a new port on each run.
