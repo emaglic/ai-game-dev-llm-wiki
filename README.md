@@ -80,6 +80,14 @@ Agents should avoid tiny fixed-size game windows unless you explicitly ask for t
 
 Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is useful. It is not a hard rule: portrait games may use 9:16, square games may use 1:1, and other formats can be chosen based on the game. The game should preserve its aspect ratio and use letterboxing or pillarboxing when needed instead of stretching, squashing, or cropping.
 
+## Input And Gamepads
+
+Most games built from this template should include gamepad support by default, using the browser Gamepad API and an Xbox-style controller layout as the baseline.
+
+Agents can choose the exact mapping that fits the game. Common defaults are left stick or D-pad for movement/navigation, A for confirm/jump/interact, B for cancel/back/secondary action, X/Y for extra actions, shoulder buttons/triggers for modifiers or genre-specific actions, and Start/Menu for pause.
+
+Gamepad controls should usually be additive alongside keyboard, mouse, pointer, and touch controls. If the game concept is a poor fit for gamepad controls, the agent should ask whether and how you want gamepad support handled.
+
 ## Running The Game
 
 You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.

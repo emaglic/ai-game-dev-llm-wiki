@@ -75,6 +75,16 @@ Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is help
 
 Menus, HUD, buttons, and gameplay-critical UI should remain visible, reachable, and usable on desktop, tablet, and mobile. If the user's game concept suggests a portrait, square, ultrawide, or otherwise specialized format, propose that aspect ratio and let the user guide the choice.
 
+## Input Defaults
+
+For most games, include a browser Gamepad API input path in addition to keyboard, mouse, pointer, or touch controls as appropriate.
+
+Use an Xbox-style controller as the default layout model. Typical defaults are left stick or D-pad for movement/navigation, A for confirm/jump/interact/primary action, B for cancel/back/secondary action, X/Y for extra actions, shoulder buttons/triggers for modifiers or genre-specific actions, and Start/Menu for pause.
+
+If the game concept is a poor fit for gamepad controls, ask the human developer whether and how gamepad support should work before adding it.
+
+Document the chosen control scheme in the wiki and, when useful, in the game's controls/settings UI.
+
 ## Preview Server
 
 When asked to run, play, test, or preview the game, agents should serve `game/` locally and report the URL. They should reuse an existing valid preview server recorded in `.agents/runtime/preview-server.json` instead of opening a new port on each run.

@@ -39,6 +39,25 @@ Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is usef
 
 Do not squash, stretch, or crop gameplay to fill the screen. On screens that do not match the target aspect ratio, scale the game as large as possible while preserving aspect ratio, using letterboxing or pillarboxing when needed.
 
+## Input And Gamepad Support
+
+Include gamepad support by default for most games, using the browser Gamepad API and an Xbox-style controller layout as the baseline.
+
+Choose mappings that fit the genre, but use these defaults as a starting point:
+
+- Left stick or D-pad: movement, cursor movement, or menu navigation.
+- A: confirm, jump, interact, or primary action.
+- B: cancel, back, dodge, or secondary action.
+- X and Y: additional actions when useful.
+- Shoulder buttons and triggers: modifiers, aim, dash, inventory, weapon swap, or other genre-specific actions.
+- Start/Menu: pause or open the in-game menu.
+
+Gamepad support should usually be additive alongside keyboard, mouse, pointer, and touch controls as appropriate. Do not assume a gamepad is connected; handle connection, disconnection, and absent gamepads gracefully.
+
+If the game is touch-first, pointer-heavy, typing-heavy, drawing-based, menu-heavy, or otherwise a poor fit for gamepad controls, ask the human developer whether and how gamepad support should work instead of forcing a weak mapping.
+
+Document the control scheme in the wiki and expose it in the game's controls/settings UI when useful.
+
 ## Local Preview Server
 
 When the user asks to run, play, test, or preview the game, serve the `game/` directory with a local static server and tell the user the URL.
