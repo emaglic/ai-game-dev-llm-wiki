@@ -1,0 +1,3 @@
+display_name: Init Game
+short_description: Initialize or revise the browser game wiki and starter scaffold.
+default_prompt: /init-game
