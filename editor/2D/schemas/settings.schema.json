@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "settings v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "viewport": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 1
+        },
+        "height": {
+          "type": "number",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "additionalProperties": true
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "common.schema.json#/$defs/property"
+      }
+    },
+    "values": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "version",
+    "viewport",
+    "properties",
+    "values"
+  ],
+  "additionalProperties": true
+}

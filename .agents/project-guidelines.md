@@ -12,12 +12,27 @@ Agents should treat root-level directories as having distinct ownership:
 
 - `assets/` is the human developer's source asset inbox. Read from it, but do not mutate it.
 - `game/` is where agents create and maintain the runnable browser game.
+- `editor/` contains reusable template editors. `editor/2D/fixture/` is verification data, not an initialized game. Reserve `editor/3D/` for a future editor.
 - `wiki/` is durable project memory for design, architecture, plans, decisions, and useful implementation context.
 - `temp/` is ephemeral. Copy any durable insight from temp files into `wiki/` before relying on it long-term.
 
 Prefer browser-native ES modules for the initial project so NodeJS is not required. Use NodeJS-based tooling only when the user asks for it or the game has outgrown the no-build setup.
 
 Before making game changes, inspect the relevant wiki pages. After making durable design or architecture decisions, update the wiki.
+
+Template maintenance, including shared editor work, does not initialize a game. For template-only work, do not read or populate the wiki, create game session activity logs, or invoke initialization. Keep reusable documentation beside the editor or in shared workflows.
+
+## Shared 2D Editor Contract
+
+During initialization, determine whether the game is 2D, 3D, or undecided. For 2D games, read [the editor contract](../editor/2D/FORMAT.md) and [usage guide](../editor/2D/README.md). Build around its versioned manifest, global settings, element catalog, and level documents. Resolve paths relative to the manifest, allowing the game and editor to live in different directories.
+
+The runtime must load the same JSON the editor edits; do not maintain a separate hardcoded world. Tiles use integer cell coordinates; objects and positions use world pixels. Match runtime units, camera center/zoom, reference viewport, layer order and other semantics to the documented contract. Keep gameplay behavior in the runtime.
+
+When adding an element or level/global setting, declare editable properties in the catalog/settings: types, labels, defaults, constraints, help and appropriate controls. Prefer numbers/sliders, checkboxes, enums, colors, asset selectors, positions and object pickers over unstructured text. Add declarative overlays or documented custom controls/visualizations when useful. Preserve unknown extension fields and reject unsupported structural versions instead of converting them silently.
+
+Give placed objects stable IDs. Validate references to objects and levels, including target types and cross-level destinations. Check that saved/exported levels reload in the editor and are consumed correctly by the game's runtime.
+
+Use existing editor capabilities first. Agents may adapt and upgrade the shared editor for a game's needs. Before significant changes (schema versions, major editing tools, custom control systems, or saving behavior), notify the human developer of the intended change and compatibility impact. This is a notification requirement, not an approval requirement. Routine fixes and minor additions can proceed normally. Update editor documentation and meaningful compatibility tests when extending it.
 
 When using a root asset in the game, copy it into `game/assets/` or an appropriate subdirectory under `game/`; link runtime code only to the copied asset.
 

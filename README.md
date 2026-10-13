@@ -8,6 +8,7 @@ The goal is to give coding agents durable project context through a local wiki w
 
 - `assets/`: source assets supplied by the human developer. Agents should read from this folder but should not modify or link to these files directly from the game.
 - `game/`: the runnable browser game. Agents write HTML, CSS, JavaScript, copied runtime assets, and game data here.
+- `editor/`: reusable development tools. The [2D level editor](editor/2D/README.md) includes a verification fixture and a local save server; a future 3D editor can live alongside it.
 - `wiki/`: durable project memory for game design, architecture, decisions, plans, asset notes, and level/data formats.
 - `wiki/activity/`: per-session agent activity logs for non-blocking coordination.
 - `temp/`: ephemeral files shared with agents, such as screenshots or throwaway notes.
@@ -34,6 +35,8 @@ The `/self-review` workflow asks an agent to review recent work for request fit,
 
 ## Initializing A Game
 
+For a 2D game, initialization uses the [shared editor data contract](editor/2D/FORMAT.md). The game's runtime consumes the same manifest, settings, catalog and levels edited by the editor.
+
 Use `/init-game` or `$init-game` with Codex to start a new game in this template.
 
 On first use, the skill should ask about the game concept, target style, controls, visuals, and any assets to consider. It can then scaffold concise wiki pages and starter files under `game/`.
@@ -41,6 +44,14 @@ On first use, the skill should ask about the game concept, target style, control
 If `/init-game` is run again after the project has already been initialized, the skill should not overwrite the existing wiki or game scaffold. It should summarize what exists and ask what you want to change.
 
 ## Browser-First Development
+
+To try the editor fixture without initializing a game:
+
+```powershell
+python editor/2D/server.py --open
+```
+
+To edit a future game, add `--project game/game.project.json`. The server is local, confines saves to that manifest's project, and needs no dependencies. See the [editor guide](editor/2D/README.md) for controls, import/export, extensions and verification. Template-only editor work leaves `wiki/` unused.
 
 This template does not require NodeJS by default.
 

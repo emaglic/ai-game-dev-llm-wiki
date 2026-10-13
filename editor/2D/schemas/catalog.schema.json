@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "catalog v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "levelProperties": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "common.schema.json#/$defs/property"
+      }
+    },
+    "elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "tile",
+              "object"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "asset": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resizable": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "number",
+                "minimum": 1
+              },
+              "height": {
+                "type": "number",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "width",
+              "height"
+            ],
+            "additionalProperties": true
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "common.schema.json#/$defs/property"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "properties"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "version",
+    "levelProperties",
+    "elements"
+  ],
+  "additionalProperties": true
+}

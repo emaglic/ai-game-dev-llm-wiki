@@ -70,6 +70,18 @@ When the project is uninitialized, ask for the minimum information needed to sta
 
 Then scaffold the wiki and starter files using [default-scaffold.md](default-scaffold.md).
 
+### 2D Data And Editor Integration
+
+Once the game is known to be 2D, read [the shared editor guide](../editor/2D/README.md) and [v1 data contract](../editor/2D/FORMAT.md). Scaffold an editor-compatible project manifest, global settings, element catalog and level JSON under the chosen game layout. Use the editor fixture as a format reference; do not turn its example elements or teleporter behavior into mandatory gameplay.
+
+Have the runtime fetch the manifest and resolve all data/assets relative to it. The runtime loads the actual levels edited by the shared editor; avoid hardcoded duplicates. Document units and interpretation in the initialized game's wiki, including camera center, game camera zoom, logical viewport, tile cell coordinates, object world coordinates and layer order.
+
+Declare typed editable properties for each new element and game-specific global/per-level setting. Choose controls, defaults, constraints, help, valid reference target types and useful overlays. Stable object IDs must survive edits and saves. Validate object/level references and report broken destinations. Support different 2D genres without embedding gameplay rules in the editor.
+
+Start the editor with `python editor/2D/server.py --project game/game.project.json --open` when appropriate and authorized to open the browser. Verify a saved/exported level reloads in the editor and the runtime uses the same edited data.
+
+Use the shared editor's existing tools before adding new ones. Agents may upgrade it to fit a game. Before significant editor changes, notify the developer of the intended change and compatibility impact (especially schema changes, major tools, custom controls or saving behavior). Notification does not require approval. Routine fixes and minor additions proceed normally.
+
 Use plain browser-native ES modules by default. Do not require NodeJS, Vite, npm, or a bundler for the initial project. If modular JavaScript is used, load it from HTML with `type="module"` and note that the game should be served from a static local server rather than opened with `file://`.
 
 Use third-party libraries when they materially help the game:
@@ -172,5 +184,5 @@ Adjust the structure to match the actual game. Keep loose files in `game/` to a 
 
 Add a fullscreen control by default unless there is a strong reason not to.
 
-Design level-based games around JSON level data when reasonable so a future level editor can import and export the same format.
+For 2D games, use the existing shared editor-compatible JSON data contract. For other games, design level data around documented JSON formats when reasonable.
 

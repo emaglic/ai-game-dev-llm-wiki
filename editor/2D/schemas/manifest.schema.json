@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "manifest v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "settings": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalog": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assets": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assetFiles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "path"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "version",
+    "settings",
+    "catalog",
+    "assets",
+    "levels"
+  ],
+  "additionalProperties": true
+}

@@ -65,6 +65,8 @@ Document that browser ES modules generally need a static server. Do not require 
 
 Keep loose files in `game/` to a minimum. Entry files such as `index.html`, `manifest.webmanifest`, and `sw.js` may live at the root; JavaScript, styles, runtime assets, level data, and third-party libraries should live in organized subdirectories.
 
+For a 2D game, additionally create `game/game.project.json`, `game/data/settings.json`, `game/data/elements.json`, and individual files under `game/data/levels/`, following [the shared editor contract](../editor/2D/FORMAT.md). This layout is a default, not a path requirement: the manifest resolves paths relative to itself. Load this data in the runtime and verify editor saves affect runtime behavior. Keep the reusable editor under `editor/2D/`; do not copy the verification fixture into a game without adapting it to the chosen design.
+
 When a third-party browser library is selected, prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` instead of linking to a CDN. Record the library name, version, source URL, and license/provenance notes in `wiki/assets.md` or `wiki/architecture.md`.
 
 ## Responsive Viewport Defaults
