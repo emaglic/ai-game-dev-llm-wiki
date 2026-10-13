@@ -128,6 +128,12 @@
             "kind"
           ],
           "additionalProperties": true
+        },
+        "space": {
+          "enum": [
+            "world",
+            "local"
+          ]
         }
       },
       "required": [

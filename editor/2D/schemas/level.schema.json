@@ -1,13 +1,40 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "level v1",
+  "title": "level v2 (pixel tiles)",
   "type": "object",
   "properties": {
     "version": {
-      "const": 1
+      "const": 2
     },
     "extensions": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "editor2D": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "grid": {
+              "type": "object",
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": true,
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "y": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "id": {
       "type": "string",
@@ -22,7 +49,7 @@
       "minimum": 1
     },
     "grid": {
-      "type": "number",
+      "type": "integer",
       "minimum": 1
     },
     "settings": {
@@ -71,12 +98,22 @@
                     },
                     "y": {
                       "type": "integer"
+                    },
+                    "width": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "height": {
+                      "type": "integer",
+                      "minimum": 1
                     }
                   },
                   "required": [
                     "type",
                     "x",
-                    "y"
+                    "y",
+                    "width",
+                    "height"
                   ],
                   "additionalProperties": true
                 }
@@ -173,6 +210,24 @@
           }
         ]
       }
+    },
+    "tileSize": {
+      "type": "object",
+      "required": [
+        "width",
+        "height"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
     }
   },
   "required": [
@@ -182,7 +237,8 @@
     "height",
     "grid",
     "settings",
-    "layers"
+    "layers",
+    "tileSize"
   ],
   "additionalProperties": true
 }

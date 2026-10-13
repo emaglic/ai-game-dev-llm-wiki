@@ -45,7 +45,7 @@ If `/init-game` is run again after the project has already been initialized, the
 
 ## Browser-First Development
 
-To try the editor fixture without initializing a game:
+To open the editor without initializing a game (choose Load example editor on the missing-project screen):
 
 ```powershell
 python editor/2D/server.py --open
@@ -120,6 +120,10 @@ Playable games should include a settings menu by default, preferably opened with
 By default, the settings menu should include fullscreen and virtual gamepad controls when applicable. Fullscreen should work where the browser supports it and degrade gracefully where it does not, especially on mobile browsers.
 
 ## Running The Game
+
+On Windows, double-click `run-editor.bat` or `run-game.bat` in the repository root. Both launchers work from any current directory, detect Python (`python` or `py -3`), and keep the server in their console window. Open the printed URL and press Ctrl+C to stop.
+
+The editor launcher uses `game/game.project.json` when present. Otherwise, the page explains that no game project exists and offers an explicit example/demo load. Example edits stay in memory; fixture saving is disabled in both editor and server. It accepts the editor server's flags, for example `run-editor.bat --open --port 8766` or `run-editor.bat --project path/to/game.project.json`. The game launcher serves `game/` at `http://127.0.0.1:8000/`; pass a different port with `run-game.bat 8001`. Until a game is created, that folder has no playable entry point.
 
 You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.
 

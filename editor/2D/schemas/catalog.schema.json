@@ -68,6 +68,136 @@
             "additionalProperties": {
               "$ref": "common.schema.json#/$defs/property"
             }
+          },
+          "visual": {
+            "type": "object",
+            "properties": {
+              "asset": {
+                "type": "string",
+                "minLength": 1
+              },
+              "frame": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "y": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": true
+              },
+              "fit": {
+                "enum": [
+                  "contain",
+                  "stretch"
+                ]
+              },
+              "editorOnly": {
+                "type": "boolean"
+              },
+              "bounds": {
+                "type": "object",
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": true,
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number",
+                    "minimum": 1e-07
+                  },
+                  "height": {
+                    "type": "number",
+                    "minimum": 1e-07
+                  }
+                }
+              }
+            },
+            "required": [],
+            "additionalProperties": true
+          },
+          "collision": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "shape": {
+                    "enum": [
+                      "rectangle",
+                      "ellipse"
+                    ]
+                  }
+                },
+                "required": [
+                  "shape"
+                ],
+                "additionalProperties": true
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "shape": {
+                    "const": "polygon"
+                  },
+                  "points": {
+                    "type": "array",
+                    "minItems": 3,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "y": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "required": [
+                  "shape",
+                  "points"
+                ],
+                "additionalProperties": true
+              }
+            ]
           }
         },
         "required": [

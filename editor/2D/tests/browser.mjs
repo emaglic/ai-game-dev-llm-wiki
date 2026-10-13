@@ -1,6 +1,6 @@
 // No npm dependencies. Drive an installed Chromium browser with native CDP/WebSocket.
 import {spawn} from 'node:child_process';
-import {mkdtemp,cp,readFile,rm,access,writeFile,mkdir} from 'node:fs/promises';
+import {mkdtemp,cp,readFile,rm,access,writeFile,mkdir,rename} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -43,26 +43,75 @@ try{
   // Force a known screen transform with Fit and derive coordinates from dimensions.
   async function screen(x,y){return evaluate(`(()=>{const r=document.getElementById('canvas').getBoundingClientRect(),z=Math.max(.05,Math.min((r.width-60)/800,(r.height-60)/480));return{x:r.left+(r.width-800*z)/2+${x}*z,y:r.top+(r.height-480*z)/2+${y}*z};})()`);}
   async function drag(a,b){const start=await screen(...a),end=await screen(...b);await call('Input.dispatchMouseEvent',{type:'mousePressed',...start,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseMoved',...end,button:'left',buttons:1});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...end,button:'left',clickCount:1});}
-  await click('#fit');await click('#layers .row:nth-child(2) .name');await change('#tool','rectangle');await drag([32,32],[90,90]);p=await bundle();assert.equal(p.levels.atrium.layers[1].tiles.filter(t=>t.x>=1&&t.x<=2&&t.y>=1&&t.y<=2).length,4);await click('#undo');p=await bundle();assert.equal(p.levels.atrium.layers[1].tiles.some(t=>t.x===1&&t.y===1),false);await click('#redo');
-  await click('#layers .row:nth-child(3) .name');await change('#tool','select');await drag([370,210],[402,242]);p=await bundle();assert.equal(p.levels.atrium.layers[2].objects.find(o=>o.type==='trigger').x,384);
+  await click('#fit');await click('#layers .layer-card:nth-child(2) .name');await change('#tool','select');await click('#snap');const beforePixels=await bundle();await drag([140,75],[153,80]);let pixelData=await bundle();const pixelTile=pixelData.levels.atrium.layers[1].tiles.find(t=>t.x===141&&t.y===69);assert.ok(pixelTile);assert.equal(pixelTile.width,32);assert.equal(pixelTile.height,32);assert.equal(await evaluate("document.querySelector('[aria-label=\"Tile X\"]').value"),'141');await drag([153,80],[153,80]);assert.deepEqual(await bundle(),pixelData);await click('#undo');assert.deepEqual(await bundle(),beforePixels);await click('#redo');assert.deepEqual(await bundle(),pixelData);await click('#undo');
+  await change('#tool','paint');await drag([100,130],[100,130]);pixelData=await bundle();assert.ok(pixelData.levels.atrium.layers[1].tiles.some(t=>t.x===100&&t.y===130&&t.width===32));await click('#undo');assert.deepEqual(await bundle(),beforePixels);await click('#snap');
+  console.log('Pixel tiles passed: unsnapped 1px drag/painting, independent dimensions, pixel inspector, selection without snapping, and undo/redo.');
+  assert.equal(await evaluate("document.querySelectorAll('#layers details[open]').length"),0);
+  await click('#fit');await click('#layers .layer-card:nth-child(2) .name');assert.equal(await evaluate("document.querySelector('#layers .layer-card:nth-child(2)').open"),false);await click('#layers .layer-card:nth-child(2) .layer-toggle');assert.equal(await evaluate("document.querySelector('#layers .layer-card:nth-child(2)').open"),true);await change('#tool','rectangle');await drag([32,32],[90,90]);p=await bundle();assert.equal(p.levels.atrium.layers[1].tiles.filter(t=>t.x>=32&&t.x<=64&&t.y>=32&&t.y<=64).length,4);await click('#undo');p=await bundle();assert.equal(p.levels.atrium.layers[1].tiles.some(t=>t.x===32&&t.y===32),false);await click('#redo');
+  await click('#layers .layer-card:nth-child(3) .name');await change('#tool','select');await drag([370,210],[402,242]);p=await bundle();assert.equal(p.levels.atrium.layers[2].objects.find(o=>o.type==='trigger').x,384);
   await change('#tool','resize');await drag([410,240],[442,272]);p=await bundle();assert.equal(p.levels.atrium.layers[2].objects.find(o=>o.type==='trigger').width,96);
   // Layer locking blocks transforms and paints.
-  await click('[aria-label="Locked actors"]');await change('#tool','select');await drag([410,240],[506,336]);p=await bundle();assert.equal(p.levels.atrium.layers[2].objects.find(o=>o.type==='trigger').x,384);await click('[aria-label="Locked actors"]');
+  await click('#layers .layer-card:nth-child(3) .layer-toggle');await click('[aria-label="Locked actors"]');await change('#tool','select');await drag([410,240],[506,336]);p=await bundle();assert.equal(p.levels.atrium.layers[2].objects.find(o=>o.type==='trigger').x,384);await click('[aria-label="Locked actors"]');
   // Teleporter type-specific picker and cross-level canvas selection.
   await change('#tool','select');await drag([555,270],[555,270]);assert.equal(await evaluate("document.querySelector('[aria-label=\"Destination destination object\"]').options.length"),2);
   await change('[aria-label="Destination destination level"]','atrium');assert.equal(await evaluate("document.querySelector('[aria-label=\"Destination destination object\"]').options.length"),3);
   await evaluate("Array.from(document.querySelectorAll('#properties button')).find(b=>b.textContent==='Pick on canvas').click()");await change('#levels','garden');await click('#fit');await drag([235,270],[235,270]);p=await bundle();assert.deepEqual(p.levels.atrium.layers[2].objects[0].properties.destination,{level:'garden',object:'garden-portal'});
   // Deletion reports reference breakage; undo repairs it.
-  await click('#layers .row:nth-child(3) .name');await change('#tool','select');await drag([235,270],[235,270]);await click('#delete');assert.match(await evaluate("document.getElementById('errors').textContent"),/broken reference/);assert.equal(await evaluate("document.getElementById('save').disabled"),true);await click('#undo');assert.equal(await evaluate("document.getElementById('errors').textContent"),'');
+  await click('#layers .layer-card:nth-child(3) .name');await change('#tool','select');await drag([235,270],[235,270]);await click('#delete');assert.match(await evaluate("document.getElementById('errors').textContent"),/broken reference/);assert.equal(await evaluate("document.getElementById('save').disabled"),true);await click('#undo');assert.equal(await evaluate("document.getElementById('errors').textContent"),'');
   await click('#save');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Saved 4')"),'Second save failed');
+  // Per-axis grid, automatic edge resizing, pixel increments, and one gesture per undo.
+  await change('#gridX','16');await change('#gridY','24');p=await bundle();assert.deepEqual(p.levels.garden.extensions.editor2D.grid,{x:16,y:24});assert.equal(p.levels.garden.grid,32);
+  await change('#tool','select');await drag([416,220],[448,220]);p=await bundle();assert.equal(p.levels.garden.layers[2].objects.find(o=>o.id==='garden-trigger').width,96);assert.equal(p.levels.garden.layers[2].objects.find(o=>o.id==='garden-trigger').x,352);
+  await click('#undo');p=await bundle();assert.equal(p.levels.garden.layers[2].objects.find(o=>o.id==='garden-trigger').width,64);await click('#redo');
+  await click('#snap');await drag([448,220],[451,220]);p=await bundle();assert.equal(p.levels.garden.layers[2].objects.find(o=>o.id==='garden-trigger').width,99);await click('#snap');
+  // Space panning takes precedence over every normal left-click editing tool.
+  for(const tool of ['paint','erase','rectangle','select','resize','camera','reference']){
+    await change('#tool',tool);const before=await bundle(),picture=await evaluate("document.getElementById('canvas').toDataURL()");await evaluate("document.getElementById('canvas').focus()");await call('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32});await drag([370,210],[420,260]);await call('Input.dispatchKeyEvent',{type:'keyUp',key:' ',code:'Space',windowsVirtualKeyCode:32});assert.notEqual(await evaluate("document.getElementById('canvas').toDataURL()"),picture);assert.deepEqual(await bundle(),before);await click('#fit');
+  }
+  // Clicking a tile in the selected layer enables keyboard deletion and undo.
+  await click('#layers .layer-card:nth-child(2) .name');await change('#tool','select');await drag([140,75],[140,75]);const beforeDelete=await bundle();await evaluate("document.getElementById('canvas').focus()");await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Delete',code:'Delete',windowsVirtualKeyCode:46});await call('Input.dispatchKeyEvent',{type:'keyUp',key:'Delete',code:'Delete',windowsVirtualKeyCode:46});p=await bundle();assert.equal(p.levels.garden.layers[1].tiles.length,beforeDelete.levels.garden.layers[1].tiles.length-1);await click('#undo');assert.deepEqual(await bundle(),beforeDelete);
+  await click('#save');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Saved 4')"),'Grid metadata save failed');assert.deepEqual(JSON.parse(await readFile(join(temporary,'project/data/levels/garden.json'),'utf8')).extensions.editor2D.grid,{x:16,y:24});
+  // Level dimensions are editable without pruning or scaling authored content.
+  const beforeResize=await bundle();
+  await change('[aria-label="Level width"]','960');await change('[aria-label="Level height"]','576');assert.equal((await bundle()).levels.garden.width,800);await click('#applyResize');
+  let resized=await bundle();assert.equal(resized.levels.garden.width,960);assert.equal(resized.levels.garden.height,576);assert.deepEqual(resized.levels.garden.layers,beforeResize.levels.garden.layers);assert.deepEqual(resized.levels.garden.settings,beforeResize.levels.garden.settings);
+  await change('[aria-label="Level width"]','64');await click('#applyResize');assert.equal(await evaluate("document.getElementById('boundsNotice').hidden"),false);assert.equal(await evaluate("document.getElementById('save').disabled"),false);await click('#undo');assert.equal((await bundle()).levels.garden.width,960);await click('#redo');assert.equal((await bundle()).levels.garden.width,64);await click('#undo');
+  await change('[aria-label="Level height"]','0');assert.equal((await bundle()).levels.garden.height,576);assert.equal(await evaluate("document.getElementById('applyResize').disabled"),true);await change('[aria-label="Level height"]','576');
+  const beforeAnchored=await bundle();await change('[aria-label="Level width"]','1024');await click('[aria-label="Top-right anchor"]');await click('#applyResize');const anchored=await bundle();assert.equal(anchored.levels.garden.width,1024);assert.equal(anchored.levels.garden.layers[0].tiles[0].x,beforeAnchored.levels.garden.layers[0].tiles[0].x+64);assert.equal(anchored.levels.garden.layers[2].objects[0].x,beforeAnchored.levels.garden.layers[2].objects[0].x+64);assert.equal(anchored.levels.garden.settings.camera.x,beforeAnchored.levels.garden.settings.camera.x+64);assert.equal(anchored.levels.garden.layers[2].objects[1].properties.facing.x,1);await click('#undo');assert.deepEqual(await bundle(),beforeAnchored);
+  await click('[aria-label="Center anchor"]');await change('[aria-label="Level width"]','961');assert.equal(await evaluate("document.getElementById('applyResize').disabled"),false);assert.match(await evaluate("document.getElementById('resizePreview').textContent"),/1px X/);await change('[aria-label="Level width"]','960');await click('[aria-label="Top-left anchor"]');
+  await click('#save');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Saved 4')"),'Resized level save failed');
+  const resizedDisk=JSON.parse(await readFile(join(temporary,'project/data/levels/garden.json'),'utf8'));assert.equal(resizedDisk.width,960);assert.equal(resizedDisk.height,576);assert.deepEqual(resizedDisk.layers,beforeResize.levels.garden.layers);
+  await call('Page.reload');await until(()=>evaluate("document.getElementById('status')?.textContent==='Project loaded.'"),'Resized level reload failed');await change('#levels','garden');assert.equal(await evaluate("document.querySelector('[aria-label=\"Level width\"]').value"),'960');assert.equal(await evaluate("document.querySelector('[aria-label=\"Level height\"]').value"),'576');
+  console.log('Level resize passed: editable dimensions, content/camera preservation, bounds notice, undo/redo, invalid-input rejection and save/reload.');
   // Import/export works without the local write API and preserves extension values.
   const exported=await bundle();await evaluate(`(()=>{const input=document.getElementById('import'),dt=new DataTransfer();dt.items.add(new File([${JSON.stringify(JSON.stringify(exported))}],'roundtrip.json',{type:'application/json'}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()`);await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Bundle imported')"),'Bundle import failed');assert.deepEqual(await bundle(),exported);
   await click('#load');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Enter a project manifest URL')"),'Imported bundle should require a manifest URL for HTTP loading');
   await change('#manifest',url.split('?project=')[1]);await click('#load');await until(()=>evaluate("document.getElementById('status').textContent==='Project loaded.'"),'Server project reload after import failed');
   // Load the actual fixture runtime; it consumes the saved camera and world documents.
   const preview=await evaluate("document.getElementById('preview').href");await call('Page.navigate',{url:preview});await until(()=>evaluate("document.getElementById('levels')?.options.length===2"),'Runtime preview failed');assert.equal(await evaluate("document.getElementById('status').textContent"),'');assert.ok(await evaluate("document.getElementById('canvas').width>0"));
+  // A server with no game manifest offers an explicit, read-only example.
+  await rename(join(temporary,'project/game.project.json'),join(temporary,'project/game.project.json.backup'));
+  await call('Page.navigate',{url:new URL('/editor/index.html',url).href});
+  await until(()=>evaluate("document.getElementById('noProject')?.hidden===false"),'Missing-project prompt did not appear');
+  assert.equal(await evaluate("document.getElementById('levels').options.length"),0);
+  assert.equal(await evaluate("document.getElementById('save').disabled"),true);
+  await click('#loadExample');
+  await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Example project loaded')"),'Explicit example did not load');
+  assert.equal(await evaluate("document.getElementById('projectMode').hidden"),false);
+  assert.equal(await evaluate("document.getElementById('save').disabled"),true);
+  await change('[aria-label="Game camera zoom"]','2');
+  assert.equal(await evaluate("document.getElementById('save').disabled"),true);
+  assert.match(await evaluate("document.getElementById('dirty').textContent"),/Example edits/);
+  const example=await bundle();
+  const rejected=await evaluate(`fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({manifestURL:location.origin+'/editor/fixture/game.project.json',project:${JSON.stringify(example)}})}).then(async r=>({status:r.status,text:await r.text()}))`);
+  assert.equal(rejected.status,403);assert.match(rejected.text,/read-only/);
+  await click('#moreActions');assert.equal(await evaluate("document.getElementById('editorSettings').open"),true);
+  assert.equal(await evaluate("document.getElementById('manifest').closest('header')===null"),true);
+  assert.ok(await evaluate("document.getElementById('manifest').getBoundingClientRect().width>0"));
+  await click('#closeSettings');assert.equal(await evaluate("document.getElementById('editorSettings').open"),false);
+  console.log('Dedicated-project flow passed: missing-game prompt, explicit example loading, persistent example label, disabled saving, server-side rejection, and editor settings.');
   assert.deepEqual(runtimeErrors,[]);
-  console.log('Browser passed: fixture load, typed camera edits, undo/redo, rectangle fill, move/resize, layer lock, cross-level picker, broken-reference feedback, save/reload, and runtime preview.');
+  console.log('Browser passed: accordion layers, per-axis grid persistence, edge resizing, Space panning across tools, tile deletion, fixture load, typed properties, undo/redo, references, import/export, save/reload and runtime preview.');
 }finally{
   ws?.close();browser?.kill();server?.kill();await wait(500);
   try{await rm(temporary,{recursive:true,force:true,maxRetries:10,retryDelay:200});}catch(e){console.warn(`Temporary browser profile cleanup failed: ${temporary}: ${e.message}`);}

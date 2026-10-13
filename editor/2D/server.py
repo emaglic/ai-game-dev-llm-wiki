@@ -21,7 +21,7 @@ def contained(root, relative):
     return path
 
 def schema_errors(value, schema, path='$'):
-    """Validate the JSON Schema subset used by our checked-in v1 schemas."""
+    """Validate the JSON Schema subset used by our checked-in project and level schemas."""
     errors = []
     if '$ref' in schema:
         filename, _, fragment = schema['$ref'].partition('#')
@@ -84,6 +84,11 @@ def validate_project(project):
     if not isinstance(levels, dict):
         return ['levels: expected object']
     types = {e['id']: e for e in catalog['elements']}
+    for e in catalog['elements']:
+        if e['kind'] == 'tile' and e.get('size') and any(type(e['size'][axis]) is not int for axis in ('width', 'height')):
+            errors.append(f'{e["id"]}: tile placement sizes must be integer pixels')
+        if e.get('visual', {}).get('frame') and not (e['visual'].get('asset') or e.get('asset')):
+            errors.append(f'{e["id"]}: sprite frame requires an asset')
     if len(types) != len(catalog['elements']):
         errors.append('catalog: duplicate element ID')
     level_schema = json.loads((EDITOR / 'schemas' / 'level.schema.json').read_text(encoding='utf-8'))
@@ -94,6 +99,8 @@ def validate_project(project):
         errors.append('manifest: duplicate level ID')
     for entry in manifest['levels']:
         level = levels.get(entry['id'])
+        if isinstance(level, dict) and level.get('version') == 1:
+            errors.append(f'{entry["id"]}: level v1 requires explicit migration to pixel-position v2')
         es = schema_errors(level, level_schema, entry['id'])
         errors.extend(es)
         if es:
@@ -123,7 +130,7 @@ def validate_project(project):
                 else:
                     cell = (item['x'], item['y'])
                     if cell in cells:
-                        errors.append('duplicate tile cell')
+                        errors.append('duplicate tile origin')
                     cells.add(cell)
     if errors:
         return errors
@@ -200,6 +207,8 @@ class ProjectStore:
 
     def save(self, project, revision):
         with self.lock:
+            if self.manifest.is_relative_to((EDITOR / 'fixture').resolve()):
+                raise ValueError('Example project is read-only; saving fixture files is disabled')
             manifest = json.loads(self.manifest.read_text(encoding='utf-8'))
             if project.get('manifest') != manifest:
                 raise ValueError('Save cannot change manifest paths or contents; edit manifest on disk and reload')
@@ -252,7 +261,15 @@ def make_handler(store):
                     return self.reply(403, b'Untrusted host or origin', 'text/plain')
                 url = urlsplit(self.path)
                 path = unquote(url.path)
+                if path == '/api/editor-config':
+                    return self.reply(200, json.dumps({
+                        'projectURL': f'/project/{quote(store.manifest.name)}' if store.manifest.is_file() else None,
+                        'exampleURL': '/editor/fixture/game.project.json',
+                        'readOnly': store.manifest.is_relative_to((EDITOR / 'fixture').resolve())
+                    }).encode())
                 if path == '/api/revision':
+                    if not store.manifest.is_file():
+                        return self.reply(404, b'No game project found', 'text/plain')
                     return self.reply(200, json.dumps({'revision': store.revision()}).encode())
                 if path.startswith('/project/'):
                     file = contained(store.root, path[len('/project/'):])
@@ -260,7 +277,7 @@ def make_handler(store):
                     file = contained(EDITOR, path[len('/editor/'):])
                 elif path == '/':
                     self.send_response(302)
-                    self.send_header('Location', f'/editor/index.html?project=/project/{quote(store.manifest.name)}')
+                    self.send_header('Location', '/editor/index.html')
                     self.end_headers()
                     return
                 else:
@@ -285,6 +302,8 @@ def make_handler(store):
                     raise ValueError('Save body must be 1 byte to 8 MiB')
                 data = json.loads(self.rfile.read(size), parse_constant=lambda x: (_ for _ in ()).throw(ValueError('Nonfinite JSON number')))
                 requested = urlsplit(data.get('manifestURL', '')).path
+                if store.manifest.is_relative_to((EDITOR / 'fixture').resolve()) or unquote(requested).startswith('/editor/fixture/'):
+                    return self.reply(403, b'Example project is read-only; saving fixture files is disabled', 'text/plain')
                 if unquote(requested) != f'/project/{store.manifest.name}':
                     raise ValueError('Save is restricted to the manifest selected at launch')
                 self.reply(200, json.dumps(store.save(data['project'], data.get('revision'))).encode())
@@ -294,14 +313,17 @@ def make_handler(store):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--project', type=Path, default=EDITOR / 'fixture' / 'game.project.json')
+    parser.add_argument('--project', type=Path, help='Defaults to this template game/game.project.json when present')
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--open', action='store_true', help='Open the editor in your default browser')
     args = parser.parse_args()
-    store = ProjectStore(args.project)
-    store.revision()  # Fail early on missing files or unsafe document paths.
+    store = ProjectStore(args.project or EDITOR.parents[1] / 'game' / 'game.project.json')
+    if args.project or store.manifest.is_file():
+        store.revision()  # Explicit missing projects and invalid data remain errors.
     server = ThreadingHTTPServer(('127.0.0.1', args.port), make_handler(store))
-    url = f'http://127.0.0.1:{server.server_port}/editor/index.html?project=/project/{quote(store.manifest.name)}'
+    url = f'http://127.0.0.1:{server.server_port}/editor/index.html'
+    if store.manifest.is_file():
+        url += f'?project=/project/{quote(store.manifest.name)}'
     print(url, flush=True)
     if args.open:
         webbrowser.open(url)

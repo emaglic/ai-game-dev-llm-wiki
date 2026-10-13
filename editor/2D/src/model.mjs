@@ -1,5 +1,7 @@
 // Shared by editor, fixture runtime, and future game runtimes. No DOM dependencies.
+import {validateAppearance} from './appearance.mjs';
 export const VERSION = 1;
+export const LEVEL_VERSION = 2;
 export const clone = value => structuredClone(value);
 export const propertyTypes = new Set(['number','integer','boolean','string','enum','color','asset','position','objectRef']);
 const plain = v => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -7,7 +9,8 @@ const finite = v => typeof v === 'number' && Number.isFinite(v);
 export function validateDocument(doc, kind) {
   const errors = [], add = (p,m) => errors.push(`${kind}.${p}: ${m}`);
   if (!plain(doc)) return [`${kind}: expected an object`];
-  if (doc.version !== VERSION) add('version', `unsupported version ${doc.version}; expected ${VERSION}`);
+  const expected=kind==='level'?LEVEL_VERSION:VERSION;
+  if(doc.version!==expected)add('version',`unsupported version ${doc.version}; expected ${expected}${kind==='level'&&doc.version===1?'. Convert with python editor/2D/migrate_levels.py --project PATH --apply':''}`);
   const str = (v,p) => { if(typeof v !== 'string' || !v) add(p,'expected nonempty string'); };
   const num = (v,p,min=0) => { if(!finite(v)||v<min) add(p,`expected finite number >= ${min}`); };
   const defs = (v,p) => {
@@ -20,6 +23,7 @@ export function validateDocument(doc, kind) {
       if(d.min!==undefined&&d.max!==undefined&&d.min>d.max) add(`${p}.${key}`,'min exceeds max');
       if(d.targets!==undefined&&(!Array.isArray(d.targets)||d.targets.some(x=>typeof x!=='string'))) add(`${p}.${key}.targets`,'expected type IDs');
       if(d.maxLength!==undefined&&(!Number.isInteger(d.maxLength)||d.maxLength<0))add(`${p}.${key}.maxLength`,'expected nonnegative integer');
+      if(d.space!==undefined&&!['world','local'].includes(d.space))add(`${p}.${key}.space`,'expected world or local');
       if(d.default!==undefined) for(const e of validateValue(d.default,d,`${p}.${key}.default`)) add('',e);
       if(d.overlay!==undefined && (!plain(d.overlay)||!['radius','connection','box'].includes(d.overlay.kind))) add(`${p}.${key}.overlay`,'unsupported overlay kind');
     }
@@ -35,9 +39,11 @@ export function validateDocument(doc, kind) {
   } else if(kind==='catalog') {
     defs(doc.levelProperties,'levelProperties');
     if(!Array.isArray(doc.elements)) add('elements','expected array');
-    else {const ids=new Set();doc.elements.forEach((e,i)=>{const p=`elements[${i}]`;if(!plain(e)){add(p,'expected object');return;}str(e.id,`${p}.id`);if(ids.has(e.id))add(`${p}.id`,'duplicate');ids.add(e.id);if(!['tile','object'].includes(e.kind))add(`${p}.kind`,'expected tile or object');defs(e.properties,`${p}.properties`);if(e.color!==undefined&&!/^#[0-9a-f]{6}$/i.test(e.color))add(`${p}.color`,'expected #rrggbb');if(e.asset!==undefined)str(e.asset,`${p}.asset`);if(e.size!==undefined){num(e.size?.width,`${p}.size.width`,1);num(e.size?.height,`${p}.size.height`,1);}if(e.resizable!==undefined&&typeof e.resizable!=='boolean')add(`${p}.resizable`,'expected boolean');});}
+    else {const ids=new Set();doc.elements.forEach((e,i)=>{const p=`elements[${i}]`;if(!plain(e)){add(p,'expected object');return;}errors.push(...validateAppearance(e,`catalog.${p}`));str(e.id,`${p}.id`);if(ids.has(e.id))add(`${p}.id`,'duplicate');ids.add(e.id);if(!['tile','object'].includes(e.kind))add(`${p}.kind`,'expected tile or object');defs(e.properties,`${p}.properties`);if(e.color!==undefined&&!/^#[0-9a-f]{6}$/i.test(e.color))add(`${p}.color`,'expected #rrggbb');if(e.asset!==undefined)str(e.asset,`${p}.asset`);if(e.size!==undefined){num(e.size?.width,`${p}.size.width`,1);num(e.size?.height,`${p}.size.height`,1);if(e.kind==='tile')for(const axis of ['width','height'])if(!Number.isInteger(e.size?.[axis]))add(`${p}.size.${axis}`,'tile placement sizes must be integer pixels');}if(e.resizable!==undefined&&typeof e.resizable!=='boolean')add(`${p}.resizable`,'expected boolean');});}
   } else if(kind==='level') {
-    str(doc.id,'id');num(doc.width,'width',1);num(doc.height,'height',1);num(doc.grid,'grid',1);
+    str(doc.id,'id');num(doc.width,'width',1);num(doc.height,'height',1);num(doc.grid,'grid',1);if(!Number.isInteger(doc.grid))add('grid','expected whole-pixel grid spacing');
+    for(const axis of ['width','height'])if(!Number.isInteger(doc.tileSize?.[axis])||doc.tileSize[axis]<1)add(`tileSize.${axis}`,'expected positive integer pixel size');
+    if(doc.extensions?.editor2D!==undefined){if(!plain(doc.extensions.editor2D))add('extensions.editor2D','expected editor metadata object');else if(doc.extensions.editor2D.grid!==undefined){const g=doc.extensions.editor2D.grid;if(!plain(g))add('extensions.editor2D.grid','expected {x,y} grid sizes');else for(const axis of ['x','y'])if(!Number.isInteger(g[axis])||g[axis]<1)add(`extensions.editor2D.grid.${axis}`,'expected positive integer pixels');}}
     if(!plain(doc.settings)) add('settings','expected object');
     if(!Array.isArray(doc.layers))add('layers','expected array');
     else {const layers=new Set(),objects=new Set();doc.layers.forEach((l,i)=>{
@@ -47,8 +53,8 @@ export function validateDocument(doc, kind) {
       if(!finite(l.opacity)||l.opacity<0||l.opacity>1)add(`${p}.opacity`,'expected 0..1');
       const key=l.kind==='tile'?'tiles':'objects';if(!Array.isArray(l[key])){add(`${p}.${key}`,'expected array');return;}
       const cells=new Set();l[key].forEach((o,j)=>{const q=`${p}.${key}[${j}]`;if(!plain(o)){add(q,'expected object');return;}str(o.type,`${q}.type`);
-        for(const axis of ['x','y']) if(!finite(o[axis])||(l.kind==='tile'&&!Number.isInteger(o[axis])))add(`${q}.${axis}`,l.kind==='tile'?'expected integer cell coordinate':'expected finite world coordinate');
-        if(l.kind==='tile'){const cell=`${o.x},${o.y}`;if(cells.has(cell))add(q,'duplicate tile cell');cells.add(cell);}
+        for(const axis of ['x','y']) if(!finite(o[axis])||(l.kind==='tile'&&!Number.isInteger(o[axis])))add(`${q}.${axis}`,l.kind==='tile'?'expected integer pixel coordinate':'expected finite world coordinate');
+        if(l.kind==='tile'){for(const axis of ['width','height'])if(!Number.isInteger(o[axis])||o[axis]<1)add(`${q}.${axis}`,'expected positive integer pixel size');const cell=`${o.x},${o.y}`;if(cells.has(cell))add(q,'duplicate tile origin');cells.add(cell);}
         else {str(o.id,`${q}.id`);if(objects.has(o.id))add(`${q}.id`,'duplicate object ID');objects.add(o.id);num(o.width,`${q}.width`,1);num(o.height,`${q}.height`,1);if(!plain(o.properties))add(`${q}.properties`,'expected object');}
       });
     });}
@@ -92,5 +98,26 @@ export class History {
   undo(){if(!this.past.length)return false;this.future.push(this.value);this.value=this.past.pop();return true;}
   redo(){if(!this.future.length)return false;this.past.push(this.value);this.value=this.future.pop();return true;}
 }
-export function paint(layer,x,y,type){const existing=layer.tiles.find(t=>t.x===x&&t.y===y);if(existing){if(type)existing.type=type;else layer.tiles.splice(layer.tiles.indexOf(existing),1);}else if(type)layer.tiles.push({x,y,type});}
+const paintIndexes=new WeakMap();
+export function paint(layer,x,y,type,size={width:32,height:32}){
+  let cached=paintIndexes.get(layer);
+  if(!cached||cached.tiles!==layer.tiles||cached.length!==layer.tiles.length){cached={tiles:layer.tiles,length:layer.tiles.length,index:new Map(layer.tiles.map(t=>[`${t.x},${t.y}`,t]))};paintIndexes.set(layer,cached);}
+  const key=`${x},${y}`,existing=cached.index.get(key);
+  if(existing){if(type)existing.type=type;else{layer.tiles.splice(layer.tiles.indexOf(existing),1);cached.index.delete(key);}}
+  else if(type){const tile={x,y,type,width:size.width,height:size.height};layer.tiles.push(tile);cached.index.set(key,tile);}
+  cached.length=layer.tiles.length;
+}
 export function newId(prefix='object'){return `${prefix}-${crypto.randomUUID()}`;}
+export function tileMoveError(level,layerId,from,to){
+  const layer=level.layers.find(l=>l.id===layerId&&l.kind==='tile');
+  if(!layer||layer.locked||!layer.visible)return 'Tile layer is missing, locked or hidden.';
+  if(!layer.tiles.some(t=>t.x===from.x&&t.y===from.y))return 'Source tile is missing.';
+  if(to.x===from.x&&to.y===from.y)return null;
+  if(!Number.isInteger(to.x)||!Number.isInteger(to.y)||!Number.isSafeInteger(to.x)||!Number.isSafeInteger(to.y))return 'Tile positions must be whole pixels.';
+  if(layer.tiles.some(t=>t.x===to.x&&t.y===to.y))return 'A tile already starts at that pixel position. Overlap at other positions is allowed.';
+  return null;
+}
+export function moveTile(level,layerId,from,to){
+  const error=tileMoveError(level,layerId,from,to);if(error)return error;
+  const layer=level.layers.find(l=>l.id===layerId),tile=layer.tiles.find(t=>t.x===from.x&&t.y===from.y);tile.x=to.x;tile.y=to.y;paintIndexes.delete(layer);return null;
+}

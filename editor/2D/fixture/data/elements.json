@@ -8,7 +8,8 @@
         "x": 320,
         "y": 180
       },
-      "help": "World pixels. Use Position camera to click its center."
+      "help": "World pixels. Use Position camera to click its center.",
+      "space": "world"
     },
     "cameraZoom": {
       "type": "number",
@@ -49,7 +50,17 @@
       "kind": "tile",
       "label": "Floor",
       "color": "#334d62",
-      "properties": {}
+      "properties": {},
+      "visual": {
+        "asset": "tile-sheet.svg",
+        "frame": {
+          "x": 0,
+          "y": 0,
+          "width": 32,
+          "height": 32
+        },
+        "fit": "contain"
+      }
     },
     {
       "id": "wall",
@@ -63,7 +74,17 @@
       "kind": "tile",
       "label": "Decoration",
       "color": "#8aad58",
-      "properties": {}
+      "properties": {},
+      "visual": {
+        "asset": "tile-sheet.svg",
+        "frame": {
+          "x": 32,
+          "y": 0,
+          "width": 32,
+          "height": 32
+        },
+        "fit": "contain"
+      }
     },
     {
       "id": "teleporter",
@@ -96,7 +117,14 @@
           "type": "color",
           "default": "#56cbb6"
         }
-      }
+      },
+      "visual": {
+        "editorOnly": true
+      },
+      "collision": {
+        "shape": "rectangle"
+      },
+      "resizable": true
     },
     {
       "id": "spawn",
@@ -117,8 +145,23 @@
           "default": {
             "x": 1,
             "y": 0
-          }
+          },
+          "space": "local"
         }
+      },
+      "visual": {
+        "asset": "player-sheet.svg",
+        "frame": {
+          "x": 32,
+          "y": 0,
+          "width": 32,
+          "height": 48
+        },
+        "fit": "contain"
+      },
+      "size": {
+        "width": 32,
+        "height": 48
       }
     },
     {
@@ -173,8 +216,13 @@
             "kind": "box",
             "width": 32,
             "height": 32
-          }
+          },
+          "space": "world"
         }
+      },
+      "visual": {
+        "asset": "crate.svg",
+        "fit": "contain"
       }
     }
   ]

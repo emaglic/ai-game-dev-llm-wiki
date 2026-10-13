@@ -4,7 +4,9 @@
   "catalog": "data/elements.json",
   "assets": "assets/",
   "assetFiles": [
-    "crate.svg"
+    "crate.svg",
+    "player-sheet.svg",
+    "tile-sheet.svg"
   ],
   "levels": [
     {

@@ -33,6 +33,8 @@ class SaveTests(unittest.TestCase):
         revision = self.store.revision()
         self.project['levels']['atrium']['extensions']['custom'] = {'secretRoom': 42}
         self.project['levels']['atrium']['settings']['cameraZoom'] = 2
+        tile = self.project['levels']['atrium']['layers'][0]['tiles'][0]
+        tile.update(x=-7, y=3, width=17, height=29)
         result = self.store.save(self.project, revision)
         self.assertEqual(result['files'], 4)
         loaded = json.loads((self.root / 'data/levels/atrium.json').read_text())
@@ -69,6 +71,58 @@ class SaveTests(unittest.TestCase):
         self.project['levels']['unlisted'] = copy.deepcopy(self.project['levels']['atrium'])
         with self.assertRaisesRegex(ValueError, 'unlisted levels'):
             self.store.save(self.project, self.store.revision())
+
+    def test_editor_grid_metadata_saves_without_changing_tile_grid(self):
+        level = self.project['levels']['garden']
+        level['extensions']['editor2D'] = {'grid': {'x': 16, 'y': 24, 'extra': 'keep'}, 'future': True}
+        self.store.save(self.project, self.store.revision())
+        loaded = json.loads((self.root / 'data/levels/garden.json').read_text())
+        self.assertEqual(loaded['grid'], 32)
+        self.assertEqual(loaded['extensions']['editor2D'], level['extensions']['editor2D'])
+        revision = self.store.revision()
+        level['extensions']['editor2D']['grid']['y'] = 0
+        with self.assertRaisesRegex(ValueError, 'bounds'):
+            self.store.save(self.project, revision)
+        self.assertEqual(self.store.revision(), revision)
+
+    def test_sprite_frames_and_collision_shapes_validate_on_save(self):
+        element = self.project['catalog']['elements'][0]
+        element['visual'] = {'asset': 'tile-sheet.svg', 'frame': {'x': -1, 'y': 0, 'width': 32, 'height': 32}}
+        with self.assertRaisesRegex(ValueError, 'bounds'):
+            self.store.save(self.project, self.store.revision())
+        element['visual']['frame']['x'] = 0
+        element['collision'] = {'shape': 'polygon', 'points': [{'x': 0, 'y': 0}]}
+        self.assertTrue(server.validate_project(self.project))
+        element['collision']['points'] = [{'x': 0, 'y': 0}, {'x': 1, 'y': 0}, {'x': .5, 'y': 1}]
+        self.assertEqual(server.validate_project(self.project), [])
+
+    def test_real_fixture_cannot_be_saved_even_directly(self):
+        store = server.ProjectStore(server.EDITOR / 'fixture/game.project.json')
+        revision = store.revision()
+        with self.assertRaisesRegex(ValueError, 'read-only'):
+            store.save(self.project, revision)
+        self.assertEqual(store.revision(), revision)
+
+    def test_missing_project_config_and_fixture_http_write_rejection(self):
+        missing = server.ProjectStore(self.root / 'missing/game.project.json')
+        http = server.ThreadingHTTPServer(('127.0.0.1', 0), server.make_handler(missing))
+        thread = threading.Thread(target=http.serve_forever, daemon=True)
+        thread.start()
+        base = f'http://127.0.0.1:{http.server_port}'
+        try:
+            with urlopen(base + '/api/editor-config') as r:
+                config = json.load(r)
+            self.assertIsNone(config['projectURL'])
+            with urlopen(base + config['exampleURL']) as r:
+                self.assertEqual(json.load(r)['version'], 1)
+            req = Request(base + '/api/save', data=json.dumps({'manifestURL': base + config['exampleURL'], 'project': self.project}).encode(), headers={'Content-Type': 'application/json'})
+            with self.assertRaises(HTTPError) as error:
+                urlopen(req)
+            self.assertEqual(error.exception.code, 403)
+        finally:
+            http.shutdown()
+            http.server_close()
+            thread.join()
 
     def test_failed_replace_rolls_back_all_files(self):
         revision = self.store.revision()
