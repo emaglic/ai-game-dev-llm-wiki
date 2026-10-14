@@ -46,7 +46,7 @@ Provide representative artwork in catalog `visual` definitions for visible objec
 
 Use existing editor capabilities first. Agents may adapt and upgrade the shared editor for a game's needs. Before significant changes (schema versions, major editing tools, custom control systems, or saving behavior), notify the human developer of the intended change and compatibility impact. This is a notification requirement, not an approval requirement. Routine fixes and minor additions can proceed normally. Update editor documentation and meaningful compatibility tests when extending it.
 
-Before maintaining the shared editor, read [its maintenance guide](../editor/2D/MAINTAINING.md) for file responsibilities, independent validators, save/migration constraints, verification and deferred scope.
+Before maintaining the shared editor, including game-specific extensions in a cloned template, read [its maintenance guide](../editor/2D/MAINTAINING.md) for UI conventions, file responsibilities, interaction invariants, validators and verification. Follow its [Editor UI conventions](../editor/2D/MAINTAINING.md#editor-ui-conventions) by default. Explicit human developer instructions may override design conventions for the task/project; do not infer an approval requirement for intentional exceptions.
 
 When using a root asset in the game, copy it into `game/assets/` or an appropriate subdirectory under `game/`; link runtime code only to the copied asset.
 
@@ -162,6 +162,20 @@ Before starting substantial work, check recent files in `wiki/activity/` to unde
 When editing `wiki/`, `.agents/`, README files, or other documentation, record the file's last modified timestamp when you read it. Before writing, check whether the OS last modified timestamp changed since that read. If it changed, reread the file and fold your changes into the latest version instead of overwriting from stale context.
 
 Use the same reread-before-write habit for game files too, even when holding the game write lock.
+
+### Saved Editor Changes During Active Work
+
+The human developer may save level, settings or catalog edits while an agent is working. These edits are project files on disk; unsaved browser edits are not visible to the agent. Check for relevant saved changes at sensible task checkpoints, not through continuous polling or background monitoring:
+
+- At task start, inspect current project data and the working-tree state.
+- Before writing related data or runtime code, check whether the manifest, referenced levels, settings or catalog changed since you last read them.
+- Between meaningful stages of longer tasks, and before testing or finishing, recheck data that can affect the implementation or verification.
+
+Use Git diffs where available, supplemented by file timestamps or content comparisons against the state observed at task start/last read. Git alone may not expose changes to ignored or untracked project files; follow the actual manifest paths. If a file changed, reread it and incorporate the latest authored data before proceeding. Avoid repeatedly reporting unchanged or unrelated files.
+
+Preserve human edits to content, positions, dimensions, properties, references and layers, including deletions. Do not restore an earlier snapshot merely because it matches your assumptions, and do not attribute every working-tree change to the developer when another agent or your own work may explain it. Reassess affected runtime dependencies and tests. Resolve straightforward integration changes within the task's scope; ask when competing edits or a gameplay decision cannot be reconciled safely. These checks supplement the game write lock and reread-before-write rules; they do not bypass them or authorize overwriting concurrent edits.
+
+Editor revision checks protect against stale editor saves, but do not replace agent-side checks before writing files. This guidance applies during active work; it promises no notifications or checks while the agent is idle.
 
 ### Game Write Lock
 

@@ -4,7 +4,7 @@ const key='editor2D.workspace';
 export function setupWorkspace(draw){
   const $=id=>document.getElementById(id),main=document.querySelector('main');
   let stored={};try{stored=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
-  const state={left:290,right:290,leftHidden:false,rightHidden:false,labels:true,ranges:true,references:true,camera:true,grid:true,gridLinked:false,gridColor:"#ffffff",gridOpacity:13};
+  const state={left:290,right:290,leftHidden:false,rightHidden:false,labels:true,ranges:true,references:true,camera:true,grid:true,gridLinked:false,gridColor:"#ffffff",gridOpacity:13,toolbarHistory:true,toolbarTools:true,toolbarGrid:true,toolbarLayers:true,toolbarPalette:true,toolbarLevel:true,layerHoverPreview:true};
   for(const name of Object.keys(state))if(typeof stored[name]===typeof state[name]&&(typeof stored[name]!=='number'||Number.isFinite(stored[name])))state[name]=stored[name];
   if(!/^#[0-9a-f]{6}$/i.test(state.gridColor))state.gridColor='#ffffff';state.gridOpacity=Math.max(0,Math.min(100,state.gridOpacity));
   const save=()=>{try{localStorage.setItem(key,JSON.stringify(state));}catch{}};
@@ -33,6 +33,11 @@ export function setupWorkspace(draw){
   optionsButton.onclick=()=>{options.hidden=!options.hidden;optionsButton.setAttribute('aria-expanded',String(!options.hidden));};
   options.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeOptions();optionsButton.focus();}};
   document.addEventListener('pointerdown',e=>{if(!$('gridAppearance').contains(e.target))closeOptions();});document.addEventListener('focusin',e=>{if(!$('gridAppearance').contains(e.target))closeOptions();});
+  const toolbarGroups=[['History','historyTools','historyToolbarToggle'],['Tools','tools','toolsToolbarToggle'],['Grid','gridControls','gridToolbarToggle'],['Layers','layerPicker','layersToolbarToggle'],['Palette','palettePicker','paletteToolbarToggle'],['Level','levelNavigation','levelToolbarToggle']];
+  function updateToolbar(){for(const [name,id,toggle]of toolbarGroups){$(id).hidden=!state['toolbar'+name];$(toggle).checked=state['toolbar'+name];}}
+  for(const [name,id,toggle]of toolbarGroups)$(toggle).onchange=e=>{state['toolbar'+name]=e.target.checked;if(!e.target.checked)for(const b of $(id).querySelectorAll('[aria-expanded=true]')){const popup=$(b.getAttribute('aria-controls'));if(popup)popup.hidden=true;b.setAttribute('aria-expanded','false');}updateToolbar();save();};
+  $('resetToolbar').onclick=()=>{for(const [name]of toolbarGroups)state['toolbar'+name]=true;updateToolbar();save();};updateToolbar();
+  $('layerHoverPreview').checked=state.layerHoverPreview;$('layerHoverPreview').onchange=e=>{state.layerHoverPreview=e.target.checked;save();draw();};
   $('viewGrid').checked=state.grid;
   $('viewGrid').onchange=e=>{$('grid').checked=e.target.checked;$('grid').dispatchEvent(new Event('change'));};
   const gridChange=$('grid').onchange;$('grid').onchange=e=>{gridChange(e);$('viewGrid').checked=state.grid;};

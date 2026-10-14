@@ -24,3 +24,11 @@ test('editor grid covers visible negative and out-of-level space at snap-aligned
   assert.ok(lines.some(([x])=>x<0));assert.ok(lines.some(([x])=>x>level.width));assert.ok(lines.some(([,y])=>y<0));
   assert.ok(lines.filter(([,y])=>y===-32).every(([x])=>x%32===0));
 });
+
+test('layer hover multiplies other visible opacity without mutating layer settings',async()=>{
+ const {drawScene}=await import('../src/render.mjs'),alphas=[],ctx={save(){},restore(){},fillRect(){},strokeRect(){}};
+ Object.defineProperty(ctx,'globalAlpha',{set(value){alphas.push(value)}});
+ const level={width:64,height:64,grid:32,settings:{},layers:[{id:'a',kind:'tile',visible:true,opacity:.6,tiles:[]},{id:'b',kind:'tile',visible:true,opacity:.8,tiles:[]},{id:'hidden',kind:'tile',visible:false,opacity:1,tiles:[]}]},before=JSON.stringify(level);
+ drawScene(ctx,{catalog:{elements:[],levelProperties:{}},settings:{}},level,new Map(),{hoveredLayer:'a'});
+ assert.deepEqual(alphas,[.6,.8*.1]);assert.equal(JSON.stringify(level),before);
+});
