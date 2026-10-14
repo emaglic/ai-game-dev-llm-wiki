@@ -51,6 +51,22 @@ try{
   await click('#snap');await drag([400,240],[413,247]);cameraAfter=await bundle();assert.deepEqual(cameraAfter.levels.atrium.settings.camera,{x:413,y:247});await click('#undo');await drag([100,100],[150,150]);assert.deepEqual(await bundle(),cameraBefore);await drag([400,240],[400,240]);assert.deepEqual(await bundle(),cameraBefore);await click('#snap');
   const cameraStart=await screen(400,240),cameraEnd=await screen(432,272);await call('Input.dispatchMouseEvent',{type:'mousePressed',...cameraStart,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseMoved',...cameraEnd,button:'left',buttons:1});await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...cameraEnd,button:'left',clickCount:1});assert.deepEqual(await bundle(),cameraBefore);
   assert.equal(await evaluate("document.querySelector('#tool option[value=erase]')"),null);assert.equal(await evaluate("document.getElementById('delete')"),null);console.log('Camera drag passed: relative movement, grid/1px snapping, click and outside-viewport protection, undo/redo and cancellation.');
+  // Workspace controls change the view only, persist locally, and remain keyboard accessible.
+  const workspaceBefore=await bundle();
+  await click('#viewButton');assert.equal(await evaluate("document.getElementById('viewMenu').hidden"),false);
+  await click('#labelsOverlay');await click('#rangesOverlay');await click('#referencesOverlay');await click('#cameraOverlay');
+  const canvasWidth=await evaluate("document.getElementById('canvas').getBoundingClientRect().width");
+  await click('#leftPanelToggle');assert.equal(await evaluate("document.getElementById('sidebar').hidden"),true);assert.ok(await evaluate("document.getElementById('canvas').getBoundingClientRect().width")>canvasWidth);
+  await click('#leftPanelToggle');
+  await evaluate("document.getElementById('rightDivider').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}))");
+  assert.equal(await evaluate("document.getElementById('rightDivider').getAttribute('aria-valuenow')"),'300');
+  assert.deepEqual(await bundle(),workspaceBefore);
+  await call('Page.reload');await until(()=>evaluate("document.getElementById('status').textContent==='Project loaded.'"),'Workspace reload failed');
+  assert.equal(await evaluate("document.getElementById('labelsOverlay').checked"),false);assert.equal(await evaluate("document.getElementById('rightDivider').getAttribute('aria-valuenow')"),'300');
+  await click('#viewButton');for(const id of ['labelsOverlay','rangesOverlay','referencesOverlay','cameraOverlay'])await click('#'+id);
+  await evaluate("document.getElementById('rightDivider').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))");
+  await click('#viewButton');await click('#fit');
+  console.log('Workspace passed: overlay toggles, panel collapse/resize, local persistence and unchanged project data.');
   assert.equal(await evaluate("document.querySelectorAll('#layers details[open]').length"),0);
   await click('#fit');await click('#layers .layer-card:nth-child(2) .name');assert.equal(await evaluate("document.querySelector('#layers .layer-card:nth-child(2)').open"),false);await click('#layers .layer-card:nth-child(2) .layer-toggle');assert.equal(await evaluate("document.querySelector('#layers .layer-card:nth-child(2)').open"),true);await change('#tool','rectangle');await drag([32,32],[90,90]);p=await bundle();assert.equal(p.levels.atrium.layers[1].tiles.filter(t=>t.x>=32&&t.x<=64&&t.y>=32&&t.y<=64).length,4);await click('#undo');p=await bundle();assert.equal(p.levels.atrium.layers[1].tiles.some(t=>t.x===32&&t.y===32),false);await click('#redo');
   await click('#layers .layer-card:nth-child(3) .name');await change('#tool','select');await drag([370,210],[402,242]);p=await bundle();assert.equal(p.levels.atrium.layers[2].objects.find(o=>o.type==='trigger').x,384);
@@ -60,7 +76,7 @@ try{
   // Teleporter type-specific picker and cross-level canvas selection.
   await change('#tool','select');await drag([555,270],[555,270]);assert.equal(await evaluate("document.querySelector('[aria-label=\"Destination destination object\"]').options.length"),2);
   await change('[aria-label="Destination destination level"]','atrium');assert.equal(await evaluate("document.querySelector('[aria-label=\"Destination destination object\"]').options.length"),3);
-  await evaluate("Array.from(document.querySelectorAll('#properties button')).find(b=>b.textContent==='Pick on canvas').click()");await change('#levels','garden');await click('#fit');await drag([235,270],[235,270]);p=await bundle();assert.deepEqual(p.levels.atrium.layers[2].objects[0].properties.destination,{level:'garden',object:'garden-portal'});
+  await evaluate("Array.from(document.querySelectorAll('#properties button')).find(b=>b.textContent==='Pick on canvas').click()");assert.equal(await evaluate("document.getElementById('pickNotice').hidden"),false);assert.equal(await evaluate("document.getElementById('canvas').style.cursor"),'crosshair');await change('#levels','garden');await click('#fit');await drag([235,270],[235,270]);p=await bundle();assert.deepEqual(p.levels.atrium.layers[2].objects[0].properties.destination,{level:'garden',object:'garden-portal'});assert.equal(await evaluate("document.getElementById('pickNotice').hidden"),true);
   // Deletion reports reference breakage; undo repairs it.
   await click('#layers .layer-card:nth-child(3) .name');await change('#tool','select');await drag([235,270],[235,270]);await evaluate("document.getElementById('canvas').focus()");await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Delete',code:'Delete',windowsVirtualKeyCode:46});await call('Input.dispatchKeyEvent',{type:'keyUp',key:'Delete',code:'Delete',windowsVirtualKeyCode:46});assert.match(await evaluate("document.getElementById('errors').textContent"),/broken reference/);assert.equal(await evaluate("document.getElementById('save').disabled"),true);await click('#undo');assert.equal(await evaluate("document.getElementById('errors').textContent"),'');
   await click('#save');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Saved 4')"),'Second save failed');

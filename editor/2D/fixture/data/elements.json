@@ -8,7 +8,7 @@
         "x": 320,
         "y": 180
       },
-      "help": "World pixels. Use Position camera to click its center.",
+      "help": "World pixels. Use Position camera to drag inside the gold viewport.",
       "space": "world"
     },
     "cameraZoom": {

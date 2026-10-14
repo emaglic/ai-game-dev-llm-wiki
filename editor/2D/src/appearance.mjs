@@ -36,7 +36,7 @@ export function intersectsStroke(o,type,start,end){
   for(let i=0;i<points.length;i++){const c=points[i],d=points[(i+1)%points.length];if(Math.max(a.x,b.x)<Math.min(c.x,d.x)||Math.max(c.x,d.x)<Math.min(a.x,b.x)||Math.max(a.y,b.y)<Math.min(c.y,d.y)||Math.max(c.y,d.y)<Math.min(a.y,b.y))continue;if(cross(a,b,c)*cross(a,b,d)<=0&&cross(c,d,a)*cross(c,d,b)<=0)return true;}
   return false;
 }
-export function drawElement(ctx,o,type,images,{editor=true,selected=false}={}){
+export function drawElement(ctx,o,type,images,{editor=true,selected=false,labels=true}={}){
   if(type?.visual?.editorOnly&&!editor)return;
   const asset=o.properties?.sprite||type?.visual?.asset||type?.asset,image=images.get(asset),frame=type?.visual?.frame;
   const validImage=image&&!frameError(type||{},image);
@@ -50,6 +50,6 @@ export function drawElement(ctx,o,type,images,{editor=true,selected=false}={}){
   }
   if(editor&&(!validImage||selected)){
     collisionPath(ctx,o,type);ctx.strokeStyle=selected?'#fff':type?.color||'#92b4d0';ctx.lineWidth=selected?2:1;ctx.setLineDash(type?.visual?.editorOnly?[5,3]:[]);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='#fff';ctx.font='11px system-ui';ctx.fillText(type?.label||o.type,o.x+3,o.y+13);
+    ctx.fillStyle='#fff';ctx.font='11px system-ui';if(labels||selected)ctx.fillText(type?.label||o.type,o.x+3,o.y+13);
   }
 }

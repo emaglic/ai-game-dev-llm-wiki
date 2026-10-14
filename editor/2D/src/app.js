@@ -1,3 +1,4 @@
+import {setupWorkspace} from './workspace.mjs';
 import {tileAt,eraseTiles,brushPosition,fillTiles,fillLayout} from './tiles.mjs';
 import {resizePlan,resizeLevel} from './level-resize.mjs';
 import {icon} from './icons.mjs';
@@ -11,8 +12,9 @@ const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext
 let history,manifestURL,levelId,layerId,elementId,selected,selectedTile,images=new Map(),assetErrors=[],saved='',gesture,pick,spaceDown=false,view={x:40,y:40,zoom:1};
 const expandedLayers=new Set();
 let activeTool='select';
+let workspace;
 const toolButtons=[...document.querySelectorAll('#tools [data-tool]')];
-function chooseTool(value){if(gesture)finish();activeTool=value;if(value!=='reference')pick=null;for(const b of toolButtons){const active=b.dataset.tool===(value==='reference'?'select':value);b.setAttribute('aria-pressed',String(active));b.tabIndex=active?0:-1;}}
+function chooseTool(value){if(gesture)finish();activeTool=value;if(value!=='reference')pick=null;for(const b of toolButtons){const active=b.dataset.tool===(value==='reference'?'select':value);b.setAttribute('aria-pressed',String(active));b.tabIndex=active?0:-1;} $('pickNotice').hidden=value!=='reference'||!pick;updateCursor();draw();}
 for(const button of toolButtons){button.onclick=()=>chooseTool(button.dataset.tool);button.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const index=toolButtons.indexOf(button),next=e.key==='Home'?0:e.key==='End'?toolButtons.length-1:(index+(e.key==='ArrowRight'?1:-1)+toolButtons.length)%toolButtons.length;chooseTool(toolButtons[next].dataset.tool);toolButtons[next].focus();};}
 let resizeDraft,resizeAnchor={x:0,y:0};
 let exampleMode=false,editorConfig={exampleURL:new URL('fixture/game.project.json',location.href).href};
@@ -48,7 +50,7 @@ function refresh(){if(!project())return;const l=level();if(!l.layers.some(x=>x.i
     const row=document.createElement('details');row.className='layer-card'+(lay.id===layerId?' active-layer':'');row.dataset.layer=lay.id;
     const key=`${levelId}/${lay.id}`;row.open=expandedLayers.has(key);
     const header=document.createElement('summary');header.tabIndex=-1;header.onclick=e=>e.preventDefault();
-    const name=document.createElement('button');name.type='button';name.textContent=lay.name||lay.id;name.className='name';name.setAttribute('aria-pressed',String(lay.id===layerId));name.onclick=()=>{const focused=document.activeElement===name;layerId=lay.id;selected=null;selectedTile=null;refresh();if(focused)[...$('layers').children].find(r=>r.dataset.layer===lay.id)?.querySelector('.name').focus({preventScroll:true});};
+    const name=document.createElement('button');name.type='button';name.textContent=lay.name||lay.id;name.className='name';for(const [condition,symbol,label]of [[lay.locked,'lock','Locked'],[!lay.visible,'visibility_off','Hidden']])if(condition){const marker=icon(symbol);marker.classList.add('layer-state-marker');marker.title=label;name.append(marker);name.setAttribute('aria-label',`${lay.name||lay.id}${lay.locked?', locked':''}${!lay.visible?', hidden':''}`);}name.setAttribute('aria-pressed',String(lay.id===layerId));name.onclick=()=>{const focused=document.activeElement===name;layerId=lay.id;selected=null;selectedTile=null;refresh();if(focused)[...$('layers').children].find(r=>r.dataset.layer===lay.id)?.querySelector('.name').focus({preventScroll:true});};
     const toggle=document.createElement('button');toggle.type='button';toggle.className='layer-toggle';toggle.setAttribute('aria-controls',`layer-settings-${l.layers.indexOf(lay)}`);
     const updateToggle=()=>{toggle.textContent=row.open?'▾':'▸';toggle.setAttribute('aria-expanded',String(row.open));toggle.setAttribute('aria-label',`${row.open?'Collapse':'Expand'} ${lay.name||lay.id} settings`);};updateToggle();
     toggle.onclick=e=>{e.preventDefault();e.stopPropagation();row.open=!row.open;row.open?expandedLayers.add(key):expandedLayers.delete(key);updateToggle();};header.append(name,toggle);row.append(header);
@@ -73,7 +75,11 @@ function refresh(){if(!project())return;const l=level();if(!l.layers.some(x=>x.i
   const outside=l.layers.flatMap(lay=>lay.kind==='tile'?lay.tiles:lay.objects).filter(o=>o.x<0||o.y<0||o.x+o.width>l.width||o.y+o.height>l.height).length;
   $('boundsNotice').hidden=!outside;$('boundsNotice').textContent=outside?`${outside} tile(s)/object(s) extend outside the level. Content is preserved; enlarge the level or reposition it.`:'';
   propertyPanel($('tileDefaults'),{width:{type:'integer',label:'Default tile width',min:1,help:'New tiles use this size unless their catalog defines a size.'},height:{type:'integer',label:'Default tile height',min:1}},l.tileSize,{project:project(),onChange:(key,value)=>{const errors=validateValue(value,{type:'integer',min:1},key);if(errors.length){status(errors.join('; '));refresh();return;}edit((p,l)=>{l.tileSize[key]=value;});}});
-  propertyPanel($('levelSettings'),project().catalog.levelProperties,l.settings,{project:project(),onChange:(k,v)=>setProperty('level',k,v,project().catalog.levelProperties[k])});
+  const cameraDefs=Object.fromEntries(Object.entries(project().catalog.levelProperties).filter(([key])=>['camera','cameraZoom'].includes(key)));
+  const otherDefs=Object.fromEntries(Object.entries(project().catalog.levelProperties).filter(([key])=>!['camera','cameraZoom'].includes(key)));
+  propertyPanel($('cameraSettings'),cameraDefs,l.settings,{project:project(),onChange:(k,v)=>setProperty('level',k,v,cameraDefs[k])});
+  $('cameraSettings').closest('.property-group').hidden=!Object.keys(cameraDefs).length;$('otherLevelGroup').hidden=!Object.keys(otherDefs).length;
+  propertyPanel($('levelSettings'),otherDefs,l.settings,{project:project(),onChange:(k,v)=>setProperty('level',k,v,project().catalog.levelProperties[k])});
   propertyPanel($('globalSettings'),project().settings.properties,project().settings.values,{project:project(),onChange:(k,v)=>setProperty('global',k,v,project().settings.properties[k])});
   $('undo').disabled=!history.past.length;$('redo').disabled=!history.future.length;errors();draw();
 }
@@ -84,13 +90,13 @@ function updateResizePreview(){
   try{const plan=resizePlan(level(),resizeDraft.width,resizeDraft.height,resizeAnchor);$('resizePreview').textContent=`Content offset: ${plan.dx}px X, ${plan.dy}px Y. Content is preserved.`;$('applyResize').disabled=plan.width===level().width&&plan.height===level().height;}
   catch(e){$('resizePreview').textContent=e.message;$('applyResize').disabled=true;}
 }
-function draw(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);ctx.fillStyle='#0c141e';ctx.fillRect(0,0,r.width,r.height);if(!level())return;ctx.translate(view.x,view.y);ctx.scale(view.zoom,view.zoom);drawScene(ctx,project(),level(),images,{grid:$('grid').checked,gridSize:editingGrid(level()),selected,selectedTile,hiddenTile:gesture?.tileMove?{layer:gesture.tileMove.layer,...gesture.tileMove.from}:null});if(gesture?.tileMove){const m=gesture.tileMove;{ctx.save();ctx.globalAlpha=layer()?.opacity??1;drawElement(ctx,{...m.tile,x:m.to.x,y:m.to.y},project().catalog.elements.find(t=>t.id===m.tile.type),images,{editor:false});ctx.globalAlpha=1;ctx.strokeStyle=tileMoveError(level(),m.layer,m.from,m.to)?'#ff8b88':'#64dec6';ctx.lineWidth=3/view.zoom;ctx.strokeRect(m.to.x,m.to.y,m.tile.width,m.tile.height);ctx.restore();}}if(gesture?.rectangle){const layout=rectangleLayout();ctx.fillStyle='#64dec622';ctx.fillRect(layout.x,layout.y,layout.width,layout.height);ctx.strokeStyle='#64dec6';ctx.lineWidth=2/view.zoom;ctx.strokeRect(layout.x,layout.y,layout.width,layout.height);}}
+function draw(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);ctx.fillStyle='#0c141e';ctx.fillRect(0,0,r.width,r.height);if(!level())return;ctx.translate(view.x,view.y);ctx.scale(view.zoom,view.zoom);drawScene(ctx,project(),level(),images,{grid:$('grid').checked,gridSize:editingGrid(level()),selected,selectedTile,overlayOptions:workspace,cameraActive:activeTool==='camera',referenceActive:activeTool==='reference',hiddenTile:gesture?.tileMove?{layer:gesture.tileMove.layer,...gesture.tileMove.from}:null});if(gesture?.tileMove){const m=gesture.tileMove;{ctx.save();ctx.globalAlpha=layer()?.opacity??1;drawElement(ctx,{...m.tile,x:m.to.x,y:m.to.y},project().catalog.elements.find(t=>t.id===m.tile.type),images,{editor:false});ctx.globalAlpha=1;ctx.strokeStyle=tileMoveError(level(),m.layer,m.from,m.to)?'#ff8b88':'#64dec6';ctx.lineWidth=3/view.zoom;ctx.strokeRect(m.to.x,m.to.y,m.tile.width,m.tile.height);ctx.restore();}}if(gesture?.rectangle){const layout=rectangleLayout();ctx.fillStyle='#64dec622';ctx.fillRect(layout.x,layout.y,layout.width,layout.height);ctx.strokeStyle='#64dec6';ctx.lineWidth=2/view.zoom;ctx.strokeRect(layout.x,layout.y,layout.width,layout.height);}}
 function rectangleLayout(){const grid=editingGrid(level()),snap=$('snap').checked;return fillLayout(brushPosition(gesture.start,grid,snap),brushPosition(gesture.end,grid,snap),brushSize());}
 function fit(){if(!level())return;const r=canvas.getBoundingClientRect();view.zoom=Math.max(.05,Math.min((r.width-60)/level().width,(r.height-60)/level().height));view.x=(r.width-level().width*view.zoom)/2;view.y=(r.height-level().height*view.zoom)/2;draw();}
 function world(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left-view.x)/view.zoom,y:(e.clientY-r.top-view.y)/view.zoom};}
 function snap(n,axis='x'){return snapCoordinate(n,editingGrid(level())[axis],$('snap').checked);}
 function edgeHit(pos){if(!layer()||layer().locked||!layer().visible||layer().kind!=='object')return null;for(const o of [...layer().objects].reverse()){if(!project().catalog.elements.find(t=>t.id===o.type)?.resizable)continue;const edges=resizeEdges(o,pos,6/view.zoom);if(edges)return{object:o,edges};}return null;}
-function updateCursor(pos){if(gesture?.tileMove||gesture?.cameraOriginal){canvas.style.cursor='grabbing';return;}if(spaceDown||gesture?.pan){canvas.style.cursor=gesture?.pan?'grabbing':'grab';return;}const edges=gesture?.edges||((activeTool==='select'||activeTool==='resize')&&pos?edgeHit(pos)?.edges:null);canvas.style.cursor=edges?resizeCursor(edges):'default';}
+function updateCursor(pos){if(activeTool==='reference'&&pick&&!spaceDown&&!gesture?.pan){canvas.style.cursor='crosshair';return;}if(gesture?.tileMove||gesture?.cameraOriginal){canvas.style.cursor='grabbing';return;}if(spaceDown||gesture?.pan){canvas.style.cursor=gesture?.pan?'grabbing':'grab';return;}const edges=gesture?.edges||((activeTool==='select'||activeTool==='resize')&&pos?edgeHit(pos)?.edges:null);canvas.style.cursor=edges?resizeCursor(edges):'default';}
 function hit(pos,all=false){for(const lay of [...level().layers].reverse()){if(lay.kind!=='object'||!lay.visible||(!all&&(lay.locked||lay.id!==layerId)))continue;for(const o of [...lay.objects].reverse())if(containsPoint(o,project().catalog.elements.find(t=>t.id===o.type),pos))return{object:o,layer:lay};}return null;}
 function catalogTypes(){return new Map(project().catalog.elements.map(t=>[t.id,t]));}
 function brushSize(){return project().catalog.elements.find(t=>t.id===elementId)?.size||level().tileSize;}
@@ -121,9 +127,9 @@ canvas.onpointerdown=e=>{
   if(!layer()||layer().locked||!layer().visible)return;
   if(tool==='select'||tool==='resize'){
     selectedTile=null;
-    if(layer().kind==='tile'){selected=null;const tile=tileAt(layer(),pos,catalogTypes());if(tile){const {x,y}=tile;selectedTile={layer:layerId,x,y};if(tool==='select')gesture={before:clone(project()),start:pos,tileMove:{layer:layerId,from:{x,y},to:{x,y},tile:clone(tile)}};}refresh();return;}
+    if(layer().kind==='tile'){selected=null;const tile=tileAt(layer(),pos,catalogTypes());if(tile){activatePanelTab(inspectorTabs,$('selectionTab'));const {x,y}=tile;selectedTile={layer:layerId,x,y};if(tool==='select')gesture={before:clone(project()),start:pos,tileMove:{layer:layerId,from:{x,y},to:{x,y},tile:clone(tile)}};}refresh();return;}
     const edge=edgeHit(pos),h=edge||hit(pos);selected=h?.object.id||null;
-    if(h){const resizable=project().catalog.elements.find(t=>t.id===h.object.type)?.resizable;const edges=edge?.edges||(tool==='resize'&&resizable?{right:true,bottom:true}:null);gesture={before:clone(project()),start:pos,original:clone(h.object),edges};if(tool==='resize'&&!resizable){gesture=null;status('This object type does not allow resizing.');}}
+    if(h){activatePanelTab(inspectorTabs,$('selectionTab'));const resizable=project().catalog.elements.find(t=>t.id===h.object.type)?.resizable;const edges=edge?.edges||(tool==='resize'&&resizable?{right:true,bottom:true}:null);gesture={before:clone(project()),start:pos,original:clone(h.object),edges};if(tool==='resize'&&!resizable){gesture=null;status('This object type does not allow resizing.');}}
     refresh();updateCursor(pos);return;
   }
   if(tool==='rectangle'){if(layer().kind!=='tile')return;gesture={before:clone(project()),start:pos,end:pos,rectangle:true};return;}
@@ -143,7 +149,7 @@ function deleteSelected(){
   if(!object())return;
   edit((p,l)=>{const lay=l.layers.find(x=>x.id===layerId&&x.kind==='object');if(lay&&!lay.locked)lay.objects=lay.objects.filter(o=>o.id!==selected);});status('Deleted object. Any broken references are listed below.');
 }
-$('undo').onclick=()=>{finish();history?.undo();refresh();};$('redo').onclick=()=>{finish();history?.redo();refresh();};$('fit').onclick=fit;$('grid').onchange=draw;
+$('undo').onclick=()=>{finish();history?.undo();refresh();};$('redo').onclick=()=>{finish();history?.redo();refresh();};$('fit').onclick=fit;
 $('levels').onchange=()=>{const next=$('levels').value;finish();levelId=next;layerId=level().layers[0]?.id;selected=null;selectedTile=null;refresh();fit();};
 for(const [id,axis]of [['gridX','x'],['gridY','y']])$(id).onchange=()=>{if(!level())return;const value=Number($(id).value);if(!Number.isInteger(value)||value<1){status('Grid sizes must be positive whole pixels.');refresh();return;}finish();edit((p,l)=>{l.extensions??={};l.extensions.editor2D??={};l.extensions.editor2D.grid={...(l.extensions.editor2D.grid||{}),...editingGrid(l),[axis]:value};});};
 for(const [id,kind]of [['addTile','tile'],['addObject','object']])$(id).onclick=()=>{if(!project())return;const name=prompt('Layer name',`${kind} layer`);if(!name)return;const id=newId('layer');edit((p,l)=>l.layers.push({id,name,kind,visible:true,locked:false,opacity:1,[kind==='tile'?'tiles':'objects']:[]}));layerId=id;refresh();};
@@ -173,4 +179,6 @@ async function startEditor(){
   if(url&&!isExample(url)){$('manifest').value=url;$('load').click();}
   else{$('noProject').hidden=false;status('No game project found. Load the example to explore the editor.');}
 }
+$('cancelPick').onclick=()=>chooseTool('select');
+workspace=setupWorkspace(draw);
 errors();startEditor();
