@@ -36,6 +36,18 @@ export function intersectsStroke(o,type,start,end){
   for(let i=0;i<points.length;i++){const c=points[i],d=points[(i+1)%points.length];if(Math.max(a.x,b.x)<Math.min(c.x,d.x)||Math.max(c.x,d.x)<Math.min(a.x,b.x)||Math.max(a.y,b.y)<Math.min(c.y,d.y)||Math.max(c.y,d.y)<Math.min(a.y,b.y))continue;if(cross(a,b,c)*cross(a,b,d)<=0&&cross(c,d,a)*cross(c,d,b)<=0)return true;}
   return false;
 }
+export function intersectsRectangle(o,type,r){
+  // Mere contact with the selection boundary must not erase adjacent grid cells.
+  if(o.x>=r.x+r.width||o.x+o.width<=r.x||o.y>=r.y+r.height||o.y+o.height<=r.y)return false;
+  const epsilon=1e-7;r={x:r.x+epsilon,y:r.y+epsilon,width:r.width-2*epsilon,height:r.height-2*epsilon};
+  const inside=p=>p.x>=r.x&&p.x<=r.x+r.width&&p.y>=r.y&&p.y<=r.y+r.height;
+  const corners=[{x:r.x,y:r.y},{x:r.x+r.width,y:r.y},{x:r.x+r.width,y:r.y+r.height},{x:r.x,y:r.y+r.height}];
+  if(corners.some(p=>containsPoint(o,type,p)))return true;
+  if(corners.some((p,i)=>intersectsStroke(o,type,p,corners[(i+1)%4])))return true;
+  if(type?.collision?.shape==='ellipse')return inside({x:o.x+o.width/2,y:o.y+o.height/2});
+  const points=type?.collision?.shape==='polygon'?type.collision.points:[{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}];
+  return points.some(p=>inside({x:o.x+p.x*o.width,y:o.y+p.y*o.height}));
+}
 export function drawElement(ctx,o,type,images,{editor=true,selected=false,labels=true}={}){
   if(type?.visual?.editorOnly&&!editor)return;
   const asset=o.properties?.sprite||type?.visual?.asset||type?.asset,image=images.get(asset),frame=type?.visual?.frame;

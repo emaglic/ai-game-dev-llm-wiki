@@ -1,7 +1,7 @@
 import {drawElement,frameError} from './appearance.mjs';
 import {objects} from './model.mjs';
 export function cameraViewport(settings,viewport){const c=settings.camera||{x:0,y:0},z=settings.cameraZoom??1;return{x:c.x-viewport.width/z/2,y:c.y-viewport.height/z/2,width:viewport.width/z,height:viewport.height/z};}
-export function drawScene(ctx,project,level,images,{grid=false,gridSize={x:level.grid,y:level.grid},selected=null,selectedTile=null,hiddenTile=null,overlays=true,overlayOptions={},cameraActive=false,referenceActive=false}={}){
+export function drawScene(ctx,project,level,images,{grid=false,gridSize={x:level.grid,y:level.grid},gridBounds=null,gridZoom=1,gridColor="#ffffff",gridOpacity=.13,selected=null,selectedTile=null,hiddenTile=null,overlays=true,overlayOptions={},cameraActive=false,referenceActive=false}={}){
   const types=new Map(project.catalog.elements.map(e=>[e.id,e]));
   ctx.fillStyle=level.settings.background||'#14202c';ctx.fillRect(0,0,level.width,level.height);
   const shape=(o,t)=>drawElement(ctx,o,t,images,{editor:overlays,selected:o.id===selected,labels:overlayOptions.labels!==false});
@@ -16,7 +16,13 @@ export function drawScene(ctx,project,level,images,{grid=false,gridSize={x:level
       }
     }ctx.restore();
   }
-  if(grid){ctx.strokeStyle='#ffffff20';ctx.lineWidth=.5;ctx.beginPath();for(let x=0;x<=level.width;x+=gridSize.x){ctx.moveTo(x,0);ctx.lineTo(x,level.height);}for(let y=0;y<=level.height;y+=gridSize.y){ctx.moveTo(0,y);ctx.lineTo(level.width,y);}ctx.stroke();}
+  if(grid){const bounds=gridBounds||{x:0,y:0,width:level.width,height:level.height};
+    // Keep the fine grid readable and bounded when zoomed far out. All lines remain snap multiples.
+    const stepX=gridSize.x*Math.max(1,Math.ceil(8/(gridSize.x*gridZoom))),stepY=gridSize.y*Math.max(1,Math.ceil(8/(gridSize.y*gridZoom)));
+    ctx.save();ctx.globalAlpha=gridOpacity;ctx.strokeStyle=gridColor;ctx.lineWidth=.5/gridZoom;ctx.beginPath();
+    for(let x=Math.floor(bounds.x/stepX)*stepX;x<=bounds.x+bounds.width;x+=stepX){ctx.moveTo(x,bounds.y);ctx.lineTo(x,bounds.y+bounds.height);}
+    for(let y=Math.floor(bounds.y/stepY)*stepY;y<=bounds.y+bounds.height;y+=stepY){ctx.moveTo(bounds.x,y);ctx.lineTo(bounds.x+bounds.width,y);}ctx.stroke();ctx.restore();
+  }
   ctx.strokeStyle='#6d91ac';ctx.lineWidth=2;ctx.strokeRect(0,0,level.width,level.height);
   const camera=level.settings.camera??project.catalog.levelProperties.camera?.default,cameraZoom=level.settings.cameraZoom??project.catalog.levelProperties.cameraZoom?.default??1;
   if(overlays&&camera&&(overlayOptions.camera!==false||cameraActive)){const r=cameraViewport({...level.settings,camera,cameraZoom},project.settings.viewport);ctx.strokeStyle='#ffdf85';ctx.lineWidth=2;ctx.setLineDash([10,5]);ctx.strokeRect(r.x,r.y,r.width,r.height);ctx.setLineDash([]);ctx.fillStyle='#ffdf85';ctx.fillText('Game camera viewport',r.x+4,r.y-6);}

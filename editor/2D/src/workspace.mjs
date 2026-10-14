@@ -4,8 +4,9 @@ const key='editor2D.workspace';
 export function setupWorkspace(draw){
   const $=id=>document.getElementById(id),main=document.querySelector('main');
   let stored={};try{stored=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
-  const state={left:290,right:290,leftHidden:false,rightHidden:false,labels:true,ranges:true,references:true,camera:true,grid:true};
+  const state={left:290,right:290,leftHidden:false,rightHidden:false,labels:true,ranges:true,references:true,camera:true,grid:true,gridLinked:false,gridColor:"#ffffff",gridOpacity:13};
   for(const name of Object.keys(state))if(typeof stored[name]===typeof state[name]&&(typeof stored[name]!=='number'||Number.isFinite(stored[name])))state[name]=stored[name];
+  if(!/^#[0-9a-f]{6}$/i.test(state.gridColor))state.gridColor='#ffffff';state.gridOpacity=Math.max(0,Math.min(100,state.gridOpacity));
   const save=()=>{try{localStorage.setItem(key,JSON.stringify(state));}catch{}};
   function layout(){
     state.left=Math.max(290,Math.min(400,state.left));state.right=Math.max(290,Math.min(440,state.right));
@@ -24,6 +25,14 @@ export function setupWorkspace(draw){
     $(side+'PanelToggle').onchange=e=>{state[side+'Hidden']=!e.target.checked;layout();save();};
   }
   for(const name of ['labels','ranges','references','camera','grid']){$(name==='grid'?'grid':name+'Overlay').checked=state[name];$(name==='grid'?'grid':name+'Overlay').onchange=e=>{state[name]=e.target.checked;save();draw();};}
+  function updateGridLink(){const b=$('gridLink');b.setAttribute('aria-pressed',String(state.gridLinked));b.replaceChildren(icon(state.gridLinked?'link':'link_off'));b.title=state.gridLinked?'Unlink grid sizes':'Link grid sizes proportionally';b.setAttribute('aria-label',b.title);}
+  $('gridLink').onclick=()=>{state.gridLinked=!state.gridLinked;updateGridLink();save();};updateGridLink();
+  $('gridColor').value=state.gridColor;$('gridOpacity').value=state.gridOpacity;$('gridOpacityValue').textContent=state.gridOpacity+'%';
+  $('gridColor').oninput=e=>{state.gridColor=e.target.value;save();draw();};$('gridOpacity').oninput=e=>{state.gridOpacity=Number(e.target.value);$('gridOpacityValue').textContent=state.gridOpacity+'%';save();draw();};
+  const options=$('gridOptionsMenu'),optionsButton=$('gridOptionsButton');const closeOptions=()=>{options.hidden=true;optionsButton.setAttribute('aria-expanded','false');};
+  optionsButton.onclick=()=>{options.hidden=!options.hidden;optionsButton.setAttribute('aria-expanded',String(!options.hidden));};
+  options.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeOptions();optionsButton.focus();}};
+  document.addEventListener('pointerdown',e=>{if(!$('gridAppearance').contains(e.target))closeOptions();});document.addEventListener('focusin',e=>{if(!$('gridAppearance').contains(e.target))closeOptions();});
   $('viewGrid').checked=state.grid;
   $('viewGrid').onchange=e=>{$('grid').checked=e.target.checked;$('grid').dispatchEvent(new Event('change'));};
   const gridChange=$('grid').onchange;$('grid').onchange=e=>{gridChange(e);$('viewGrid').checked=state.grid;};

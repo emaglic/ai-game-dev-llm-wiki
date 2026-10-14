@@ -74,3 +74,35 @@ main:has(#leftDivider[hidden]):has(#rightDivider[hidden]){grid-template-columns:
 .layer-card.active-layer .name,.layer-card.active-layer .name:hover{background:transparent!important}
 #palette button:hover{background:#294a59!important}
 #palette button.active,#palette button.active:hover{background:#356877!important}
+
+.layer-type-icon{display:block;flex:0 0 16px;width:16px;height:16px;background:#fff;mask-size:contain;mask-repeat:no-repeat;mask-position:center}
+.layer-type-icon.tile{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z'/%3E%3C/svg%3E")}
+.layer-type-icon.object{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m12 2 10 5v10l-10 5L2 17V7zm0 2.2L5.2 7.6 12 11l6.8-3.4zM4 9.2v6.6l7 3.5v-6.6zm16 0-7 3.5v6.6l7-3.5z'/%3E%3C/svg%3E")}
+.layer-name-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.layer-card summary .name{gap:5px}
+#renameLayerDialog{width:min(380px,calc(100vw - 32px));padding:20px;background:#182430;color:#e1eaf2;border:1px solid #52687d;border-radius:8px}#renameLayerDialog::backdrop{background:#0009}#renameTitle{font-size:18px;margin-top:0}#renameError{color:#ffba9e}
+
+#targetNotice{position:absolute;bottom:12px;left:32px;right:32px;z-index:2;padding:8px;background:#182430e8;border:1px solid #52687d;border-radius:4px;font-size:12px;pointer-events:none}#targetNotice[hidden]{display:none}
+
+#projectMode{background:transparent;padding:0;color:#ffdf85;border-radius:0}#levelNavigation{display:flex;align-items:center;gap:8px;margin-left:auto}#dirty{margin-left:0}
+
+.menu-popup a{color:inherit}.menu-popup a:hover{background:#356877}.menu-popup a .material-icon{margin-left:auto;flex-shrink:0}
+
+#menuBar>strong{order:2;margin-left:auto;margin-right:0}#menuBar>#projectMode{margin-left:12px}
+
+#menuBar{position:relative}#menuBar>#projectMode{position:absolute;left:50%;transform:translateX(-50%);margin:0;max-width:calc(100% - 440px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#gridControls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}#gridControls label{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}#gridControls input[type=checkbox]{margin:0}
+
+.grid-number{position:relative;display:inline-flex;align-items:stretch;color:inherit;font-size:inherit}
+#gridX,#gridY{border-radius:4px 0 0 4px}.grid-number>button{width:24px;padding:2px;border-left:0;border-radius:0 4px 4px 0}.grid-number>button .material-icon{width:16px;height:16px}
+.grid-presets{position:absolute;top:calc(100% + 4px);left:0;z-index:25;min-width:89px;max-height:240px;overflow:auto;padding:4px;background:#182430;border:1px solid #52687d;border-radius:5px;box-shadow:0 5px 16px #0008}.grid-presets[hidden]{display:none}.grid-presets button{display:block;width:100%;padding:5px 10px;border:0;background:transparent;text-align:left}.grid-presets button:focus-visible{outline:2px solid #ffdf85;outline-offset:-2px}
+
+#fitToolbar{position:relative;margin-right:9px}#fitToolbar::after{content:"";position:absolute;right:-12px;top:0;bottom:0;width:1px;background:#52687d;pointer-events:none}
+
+#gridLink{width:30px;height:32px;padding:4px;border-color:transparent;background:transparent}#gridLink[aria-pressed=true]{color:inherit;border-color:transparent;background:transparent}#gridLink:focus-visible{outline:2px solid #ffdf85;outline-offset:2px}
+
+#gridAppearance{position:relative;display:inline-flex}#gridOptionsButton{width:28px;height:32px;padding:3px}#gridOptionsMenu{position:absolute;top:calc(100% + 5px);right:0;z-index:25;display:grid;gap:12px;width:240px;padding:14px;background:#182430;border:1px solid #52687d;border-radius:6px;box-shadow:0 5px 16px #0008;color:#e1eaf2;font-size:14px}#gridOptionsMenu[hidden]{display:none}#gridOptionsMenu label{display:grid;grid-template-columns:1fr auto;gap:8px}#gridOptionsMenu input[type=range]{grid-column:1;width:160px}#gridOptionsMenu input[type=color]{width:44px;height:30px;padding:2px}#gridOpacityValue{font-size:12px}
+
+#gridOptionsMenu #gridOpacity{padding:0;border:0;border-radius:0;background:transparent;margin:0}
+
+.grid-heading{font-size:14px;color:#e1eaf2}

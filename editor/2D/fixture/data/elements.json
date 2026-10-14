@@ -8,7 +8,7 @@
         "x": 320,
         "y": 180
       },
-      "help": "World pixels. Use Position camera to drag inside the gold viewport.",
+      "help": "World pixels. Select Camera by its outline or in the Level panel, then drag inside the gold viewport.",
       "space": "world"
     },
     "cameraZoom": {

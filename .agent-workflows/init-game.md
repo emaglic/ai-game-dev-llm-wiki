@@ -76,6 +76,8 @@ Once the game is known to be 2D, read [the shared editor guide](../editor/2D/REA
 
 Have the runtime fetch the manifest and resolve all data/assets relative to it. The runtime loads the actual levels edited by the shared editor; avoid hardcoded duplicates. Document units and interpretation in the initialized game's wiki, including camera center, game camera zoom, logical viewport, whole-pixel tile positions and independent tile dimensions, object world coordinates and layer order.
 
+Camera viewport resizing writes the existing camera center/zoom; it does not introduce independent camera dimensions. Honor saved zoom and declared defaults. Layer names are editable labels; use stable IDs/kinds in runtime logic. Grid appearance/linking and panel preferences are editor-local and require no gameplay fields.
+
 Scaffold level format v2: tile x/y/width/height are whole world pixels, tileSize supplies default placement dimensions, and grid controls snapping only. Manifest/settings/catalog remain v1. Render tiles directly at x/y, support overlap and boundary overhang, and never derive tile sizes/positions from snapping. For existing v1 levels, run the explicit migration with backups and update runtime interpretation before playing.
 
 Treat level width and height as developer-configurable world dimensions. The editor exposes them in Level settings and saves them in each level JSON. Derive runtime world/camera boundaries from the loaded values. Resizing preserves content rather than scaling or pruning it; document runtime treatment of out-of-bounds content and verify resized saved levels in the game.

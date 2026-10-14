@@ -26,3 +26,5 @@
 .icon-aspect_ratio{--icon-url:url("./aspect_ratio.svg")}
 .icon-videocam{--icon-url:url("./videocam.svg")}
 .icon-link{--icon-url:url("./link.svg")}
+
+.icon-link_off{--icon-url:url("./link_off.svg")}

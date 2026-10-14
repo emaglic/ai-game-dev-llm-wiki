@@ -15,3 +15,12 @@ test('duplicate IDs and duplicate cells reject',async()=>{const p=await fixtureP
 test('camera uses reference viewport and game zoom, not editor navigation',()=>{assert.deepEqual(cameraViewport({camera:{x:200,y:100},cameraZoom:2},{width:640,height:360}),{x:40,y:10,width:320,height:180});});
 test('loader resolves every document relative to manifest in a different directory',async()=>{const p=await fixtureProject(),base='http://example.test/elsewhere/game.project.json',files=new Map([[base,p.manifest],[resolvePath(base,p.manifest.settings),p.settings],[resolvePath(base,p.manifest.catalog),p.catalog],...p.manifest.levels.map(l=>[resolvePath(base,l.path),p.levels[l.id]])]);const result=await loadProject(base,async url=>({ok:files.has(url),status:404,json:async()=>clone(files.get(url))}));assert.deepEqual(result.project,p);});
 test('malformed bundles, extra levels and invalid camera convention reject usefully',async()=>{assert.deepEqual(validateProject(null),['project: expected an object']);const p=await fixtureProject();p.levels.unlisted=clone(p.levels.atrium);assert.match(validateProject(p).join(),/not listed in manifest/);delete p.levels.unlisted;p.levels.atrium.settings.cameraZoom=0;assert.match(validateProject(p).join(),/positive game zoom/);delete p.levels;assert.match(validateProject(p).join(),/keyed by manifest/);});
+
+test('editor grid covers visible negative and out-of-level space at snap-aligned multiples',async()=>{
+  const {drawScene}=await import('../src/render.mjs'),lines=[];
+  const ctx={save(){},restore(){},fillRect(){},strokeRect(){},beginPath(){},moveTo(x,y){lines.push([x,y]);},lineTo(){},stroke(){}};
+  const level={width:64,height:64,grid:32,settings:{},layers:[]};
+  drawScene(ctx,{catalog:{elements:[],levelProperties:{}},settings:{}},level,new Map(),{grid:true,gridBounds:{x:-64,y:-32,width:192,height:128},gridSize:{x:32,y:16}});
+  assert.ok(lines.some(([x])=>x<0));assert.ok(lines.some(([x])=>x>level.width));assert.ok(lines.some(([,y])=>y<0));
+  assert.ok(lines.filter(([,y])=>y===-32).every(([x])=>x%32===0));
+});
