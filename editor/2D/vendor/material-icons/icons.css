@@ -20,3 +20,9 @@
 .icon-lock{--icon-url:url("./lock.svg")}
 .icon-lock_open{--icon-url:url("./lock_open.svg")}
 .icon-more_vert{--icon-url:url("./more_vert.svg")}
+.icon-open_with{--icon-url:url("./open_with.svg")}
+.icon-brush{--icon-url:url("./brush.svg")}
+.icon-crop_square{--icon-url:url("./crop_square.svg")}
+.icon-aspect_ratio{--icon-url:url("./aspect_ratio.svg")}
+.icon-videocam{--icon-url:url("./videocam.svg")}
+.icon-link{--icon-url:url("./link.svg")}

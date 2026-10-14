@@ -6,6 +6,8 @@ This is the canonical shared instruction file for agents. Provider-specific entr
 
 Provider-neutral workflows live in `.agent-workflows/`. Treat workflow names such as `/init-game` as plain-text triggers outside providers that natively support them. Do not create provider-specific commands, skills, memory files, or workflow systems unless the user explicitly asks for that provider integration.
 
+For focused UI/UX review requests, follow [`.agent-workflows/ui-ux-review.md`](../.agent-workflows/ui-ux-review.md). Review exactly one explicitly chosen target, game or editor; ask which if it is unspecified. This workflow suggests usability and visual improvements without implementing them. In Codex, `/ui-ux-review` can use the repo-scoped skill at [`.codex/skills/ui-ux-review/SKILL.md`](../.codex/skills/ui-ux-review/SKILL.md).
+
 After meaningful feature work, refactors, visual/input changes, game scaffold changes, dependency changes, or before the human developer commits, recommend `/self-review`. Before running it, ask the human developer whether they want the review, briefly explain what it checks, and briefly explain why it is being recommended at that moment. Do not run it automatically unless the user has asked for it or agreed to it.
 
 Agents should treat root-level directories as having distinct ownership:

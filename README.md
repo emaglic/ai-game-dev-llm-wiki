@@ -33,6 +33,8 @@ Provider-specific files should stay short and point to the shared guidelines/wor
 
 The `/self-review` workflow asks an agent to review recent work for request fit, code risks, and this template's native-ish browser game goals. Agents should recommend it after meaningful work or before commits, but should ask before running it and briefly explain what it checks and why it is useful at that moment.
 
+The [/ui-ux-review workflow](.agent-workflows/ui-ux-review.md) reviews usability, visual design and interaction consistency for **either the game or the editor**, one target per pass. It offers prioritized suggestions without making interface changes. It considers icon-only, text-only and combined controls case by case, including tooltips, colors and icon meanings. Use `/ui-ux-review editor` or `/ui-ux-review game`; if you omit the target, the agent asks which to review. Codex also provides the [repo-scoped skill](.codex/skills/ui-ux-review/SKILL.md) as `$ui-ux-review`.
+
 ## Initializing A Game
 
 For a 2D game, initialization uses the [shared editor data contract](editor/2D/FORMAT.md). The game's runtime consumes the same manifest, settings, catalog and levels edited by the editor.
