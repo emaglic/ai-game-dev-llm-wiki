@@ -45,6 +45,12 @@ On first use, the skill should ask about the game concept, target style, control
 
 If `/init-game` is run again after the project has already been initialized, the skill should not overwrite the existing wiki or game scaffold. It should summarize what exists and ask what you want to change.
 
+## Migrating An Existing Game
+
+Use `/migrate-game` or `$migrate-game` after copying an existing project's `game/` and `wiki/` into a newer template clone, or updating the template in your existing game repository. The [shared workflow](.agent-workflows/migrate-game.md) and [Codex skill](.codex/skills/migrate-game/SKILL.md) ask how you prepared the project and offer instructions if needed; include those details in your request to skip redundant questions.
+
+Migration checks compatibility, adapts the existing game and updates wiki pages in place without running initialization. It preserves the game's design and authored content, verifies editor/runtime integration, and avoids unnecessary changes when already compatible. It relies on your preparation details and actual compatibility checks, without adding template-version tracking records.
+
 ## Browser-First Development
 
 To open the editor without initializing a game (choose Load example editor on the missing-project screen):
