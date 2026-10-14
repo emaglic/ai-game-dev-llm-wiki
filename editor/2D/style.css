@@ -125,3 +125,14 @@ main:has(#leftDivider[hidden]):has(#rightDivider[hidden]){grid-template-columns:
 
 #layerPicker{position:relative}#layerPickerSelect{display:flex;align-items:center;gap:8px;text-align:left}#layerPickerCurrent{color:inherit;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#layerPickerSelect>.material-icon{width:16px;height:16px;flex-shrink:0}
 #layerPickerMenu{position:absolute;top:calc(100% + 5px);left:12px;z-index:25;min-width:240px;max-width:320px;max-height:min(420px,60dvh);overflow:auto;padding:6px;background:#182430;border:1px solid #52687d;border-radius:6px;box-shadow:0 5px 16px #0008}#layerPickerMenu[hidden]{display:none}#layerPickerMenu button{display:block;width:100%;text-align:left;margin:3px 0}#layerPickerMenu button[aria-pressed=true]{background:#356877}#layerPickerMenu button:hover{background:#294a59!important}#layerPickerMenu button[aria-pressed=true]:hover{background:#356877!important}#layerPickerMenu button:focus-visible{outline:2px solid #ffdf85;outline-offset:-2px}
+
+#levelPanel details.property-group{padding:0;overflow:hidden}
+#levelPanel .property-group>summary{cursor:pointer;padding:11px 12px;font-weight:600;color:#92b4d0;user-select:none}
+#levelPanel .property-group>summary:hover{background:#294a59}
+#levelPanel .property-group>summary:focus-visible{outline:2px solid #ffdf85;outline-offset:-2px}
+#levelPanel .property-group[open]>summary{border-bottom:1px solid #3d5266}
+.property-group-content{padding:10px}
+
+#layerPickerCurrent,#layerPickerMenu button{display:flex;align-items:center;gap:8px}#layerPickerCurrent .layer-type-icon,#layerPickerMenu .layer-type-icon{flex:0 0 16px}
+
+#layerPickerMenu button{justify-content:flex-start;text-align:left}

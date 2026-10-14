@@ -69,9 +69,10 @@ function refresh({rebuildLayers=true}={}){if(!project())return;const l=level();i
   inspectedSelection=selectionKey;$('selectionHint').hidden=!!selectionKey;
   const grid=editingGrid(l);$('gridX').value=grid.x;$('gridY').value=grid.y;
   if(hoveredLayer&&!l.layers.some(lay=>lay.id===hoveredLayer))hoveredLayer=null;
-  const layerSelect=$('layerPickerSelect'),layerMenu=$('layerPickerMenu');layerMenu.replaceChildren();layerSelect.disabled=!l.layers.length;$('layerPickerCurrent').textContent=layer()?`${layer().name||layerId} (${layer().kind==='tile'?'Tile':'Object'})`:'No layers';
-  for(const lay of [...l.layers].reverse()){const button=document.createElement('button');button.type='button';button.textContent=`${lay.name||lay.id} (${lay.kind==='tile'?'Tile':'Object'})`;button.dataset.layer=lay.id;button.setAttribute('aria-pressed',String(lay.id===layerId));button.onclick=()=>{activateLayer(lay.id);$('layerPickerSelect').focus();};button.onpointerenter=button.onfocus=()=>previewLayer(lay.id);layerMenu.append(button);}
-
+  const layerSelect=$('layerPickerSelect'),layerMenu=$('layerPickerMenu');layerMenu.replaceChildren();layerSelect.disabled=!l.layers.length;
+  const layerTypeIcon=lay=>{const marker=document.createElement('span');marker.className=`layer-type-icon ${lay.kind}`;marker.title=lay.kind==='tile'?'Tile layer':'Object layer';marker.setAttribute('aria-hidden','true');return marker;};
+  const currentLayer=$('layerPickerCurrent');currentLayer.replaceChildren();if(layer())currentLayer.append(layerTypeIcon(layer()),document.createTextNode(layer().name||layerId));else currentLayer.textContent='No layers';
+  for(const lay of [...l.layers].reverse()){const button=document.createElement('button');button.type='button';button.append(layerTypeIcon(lay),document.createTextNode(lay.name||lay.id));button.setAttribute('aria-label',`${lay.name||lay.id}, ${lay.kind} layer`);button.dataset.layer=lay.id;button.setAttribute('aria-pressed',String(lay.id===layerId));button.onclick=()=>{activateLayer(lay.id);$('layerPickerSelect').focus();};button.onpointerenter=button.onfocus=()=>previewLayer(lay.id);layerMenu.append(button);}
   $('paletteLayer').textContent=layer()?`Active layer: ${layer().name||layerId}`:'Select a layer to see available elements.';
   $('levels').replaceChildren(...project().manifest.levels.map(e=>new Option(e.label||e.id,e.id)));$('levels').value=levelId;
   if(rebuildLayers){$('layers').replaceChildren();for(const lay of [...l.layers].reverse()){
