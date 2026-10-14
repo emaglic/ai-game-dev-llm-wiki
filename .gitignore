@@ -2,3 +2,7 @@
 .agents/runtime/*
 !.agents/runtime/.gitkeep
 .agents/locks/*.lock
+
+# Keep the temporary workspace directory, but not its contents
+temp/*
+!temp/.gitkeep

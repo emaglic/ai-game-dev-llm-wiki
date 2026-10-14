@@ -6,18 +6,47 @@ This is the canonical shared instruction file for agents. Provider-specific entr
 
 Provider-neutral workflows live in `.agent-workflows/`. Treat workflow names such as `/init-game` as plain-text triggers outside providers that natively support them. Do not create provider-specific commands, skills, memory files, or workflow systems unless the user explicitly asks for that provider integration.
 
+For migrating an existing game/wiki to an updated template, follow [`.agent-workflows/migrate-game.md`](../.agent-workflows/migrate-game.md), rather than initialization. Establish preparation with the developer, inspect compatibility and preserve the existing wiki. Codex provides the repo-scoped adapter at [`.codex/skills/migrate-game/SKILL.md`](../.codex/skills/migrate-game/SKILL.md).
+
+For focused UI/UX review requests, follow [`.agent-workflows/ui-ux-review.md`](../.agent-workflows/ui-ux-review.md). Review exactly one explicitly chosen target, game or editor; ask which if it is unspecified. This workflow suggests usability and visual improvements without implementing them. In Codex, `/ui-ux-review` can use the repo-scoped skill at [`.codex/skills/ui-ux-review/SKILL.md`](../.codex/skills/ui-ux-review/SKILL.md).
+
 After meaningful feature work, refactors, visual/input changes, game scaffold changes, dependency changes, or before the human developer commits, recommend `/self-review`. Before running it, ask the human developer whether they want the review, briefly explain what it checks, and briefly explain why it is being recommended at that moment. Do not run it automatically unless the user has asked for it or agreed to it.
 
 Agents should treat root-level directories as having distinct ownership:
 
 - `assets/` is the human developer's source asset inbox. Read from it, but do not mutate it.
 - `game/` is where agents create and maintain the runnable browser game.
+- `editor/` contains reusable template editors. `editor/2D/fixture/` is verification data, not an initialized game. Reserve `editor/3D/` for a future editor.
 - `wiki/` is durable project memory for design, architecture, plans, decisions, and useful implementation context.
 - `temp/` is ephemeral. Copy any durable insight from temp files into `wiki/` before relying on it long-term.
 
 Prefer browser-native ES modules for the initial project so NodeJS is not required. Use NodeJS-based tooling only when the user asks for it or the game has outgrown the no-build setup.
 
 Before making game changes, inspect the relevant wiki pages. After making durable design or architecture decisions, update the wiki.
+
+Template maintenance, including shared editor work, does not initialize a game. For template-only work, do not read or populate the wiki, create game session activity logs, or invoke initialization. Keep reusable documentation beside the editor or in shared workflows.
+
+## Shared 2D Editor Contract
+
+During initialization, determine whether the game is 2D, 3D, or undecided. For 2D games, read [the editor contract](../editor/2D/FORMAT.md) and [usage guide](../editor/2D/README.md). Build around its versioned manifest, global settings, element catalog, and level documents. Resolve paths relative to the manifest, allowing the game and editor to live in different directories.
+
+The runtime must load the same JSON the editor edits; do not maintain a separate hardcoded world. Level format v2 stores tile x/y and width/height as whole world pixels, including off-grid and out-of-bounds positions. Grid X/Y and Snap are editor placement aids; never multiply v2 tile coordinates by the grid or assume tile dimensions equal grid spacing. Objects and declared positions use world pixels. Match runtime units, camera center/zoom, reference viewport, layer order and other semantics to the documented contract. Keep gameplay behavior in the runtime. Camera viewport handles edit the existing camera center/zoom and preserve the reference viewport aspect ratio; runtimes must honor saved zoom and declared defaults, rather than assuming a fixed camera rectangle. Layer renaming changes display names only: identify layers by stable IDs/kind, never user-editable names. Grid appearance/linking and workspace panels are local editor preferences and need no game integration.
+
+Level `width` and `height` are configurable by the human developer through the editor's Level settings. Use the loaded level dimensions for world boundaries, camera limits and any gameplay systems that depend on room size; do not hardcode the initial dimensions. Resizing changes the boundary without scaling or deleting authored content, so handle out-of-bounds content explicitly and preserve it when editing. Verify a saved dimension change is reflected correctly by the game's runtime.
+
+Anchored level resizing translates authored content across every layer, including locked layers, to keep the chosen edge/center fixed. The camera and position properties explicitly marked `space: "world"` move with it. Mark absolute per-level/object positions as world space; use `space: "local"` for offsets, directions and vectors. Unmarked position properties remain unchanged to preserve existing catalogs. Declare unusual coordinate fields explicitly and adapt the resize operation if needed. Verify translated pixel data in the runtime; object IDs and references stay stable.
+
+For existing v1 cell-based levels, use the explicit migration documented in editor/2D/FORMAT.md, retain backups, and update the runtime before loading converted data. Manifest/settings/catalog remain version 1; levels are version 2. Allow partial tiles and overlap at different pixel origins; array order determines drawing order. Declare integer tile placement sizes in the catalog or use the level tileSize defaults. Use a spatial index when game collision/query scale warrants it; storage in pixels does not require abandoning efficient spatial lookups.
+
+When adding an element or level/global setting, declare editable properties in the catalog/settings: types, labels, defaults, constraints, help and appropriate controls. Prefer numbers/sliders, checkboxes, enums, colors, asset selectors, positions and object pickers over unstructured text. Add declarative overlays or documented custom controls/visualizations when useful. Preserve unknown extension fields and reject unsupported structural versions instead of converting them silently.
+
+Give placed objects stable IDs. Validate references to objects and levels, including target types and cross-level destinations. Check that saved/exported levels reload in the editor and are consumed correctly by the game's runtime.
+
+Provide representative artwork in catalog `visual` definitions for visible objects and tiles. Recommend a clear sprite-sheet frame and placement size, using actual runtime assets and source pixel coordinates. Set art bounds/fit explicitly when artwork and collision dimensions differ. Palette thumbnails and placed elements should resemble their runtime appearance. For invisible triggers/teleport regions, use `visual.editorOnly` and declare `collision` geometry matching the actual runtime interaction area (rectangle, ellipse, or normalized polygon). Object dimensions and collision points must agree with runtime hitboxes; do not substitute a decorative icon for the true interaction bounds. Keep dynamically derived collision sizes in sync with edited properties, extending the shared geometry contract when needed. Verify appearance, frame bounds and collisions in both editor and runtime.
+
+Use existing editor capabilities first. Agents may adapt and upgrade the shared editor for a game's needs. Before significant changes (schema versions, major editing tools, custom control systems, or saving behavior), notify the human developer of the intended change and compatibility impact. This is a notification requirement, not an approval requirement. Routine fixes and minor additions can proceed normally. Update editor documentation and meaningful compatibility tests when extending it.
+
+Before maintaining the shared editor, including game-specific extensions in a cloned template, read [its maintenance guide](../editor/2D/MAINTAINING.md) for UI conventions, file responsibilities, interaction invariants, validators and verification. Follow its [Editor UI conventions](../editor/2D/MAINTAINING.md#editor-ui-conventions) by default. Explicit human developer instructions may override design conventions for the task/project; do not infer an approval requirement for intentional exceptions.
 
 When using a root asset in the game, copy it into `game/assets/` or an appropriate subdirectory under `game/`; link runtime code only to the copied asset.
 
@@ -133,6 +162,20 @@ Before starting substantial work, check recent files in `wiki/activity/` to unde
 When editing `wiki/`, `.agents/`, README files, or other documentation, record the file's last modified timestamp when you read it. Before writing, check whether the OS last modified timestamp changed since that read. If it changed, reread the file and fold your changes into the latest version instead of overwriting from stale context.
 
 Use the same reread-before-write habit for game files too, even when holding the game write lock.
+
+### Saved Editor Changes During Active Work
+
+The human developer may save level, settings or catalog edits while an agent is working. These edits are project files on disk; unsaved browser edits are not visible to the agent. Check for relevant saved changes at sensible task checkpoints, not through continuous polling or background monitoring:
+
+- At task start, inspect current project data and the working-tree state.
+- Before writing related data or runtime code, check whether the manifest, referenced levels, settings or catalog changed since you last read them.
+- Between meaningful stages of longer tasks, and before testing or finishing, recheck data that can affect the implementation or verification.
+
+Use Git diffs where available, supplemented by file timestamps or content comparisons against the state observed at task start/last read. Git alone may not expose changes to ignored or untracked project files; follow the actual manifest paths. If a file changed, reread it and incorporate the latest authored data before proceeding. Avoid repeatedly reporting unchanged or unrelated files.
+
+Preserve human edits to content, positions, dimensions, properties, references and layers, including deletions. Do not restore an earlier snapshot merely because it matches your assumptions, and do not attribute every working-tree change to the developer when another agent or your own work may explain it. Reassess affected runtime dependencies and tests. Resolve straightforward integration changes within the task's scope; ask when competing edits or a gameplay decision cannot be reconciled safely. These checks supplement the game write lock and reread-before-write rules; they do not bypass them or authorize overwriting concurrent edits.
+
+Editor revision checks protect against stale editor saves, but do not replace agent-side checks before writing files. This guidance applies during active work; it promises no notifications or checks while the agent is idle.
 
 ### Game Write Lock
 

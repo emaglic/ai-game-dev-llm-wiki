@@ -8,6 +8,7 @@ The goal is to give coding agents durable project context through a local wiki w
 
 - `assets/`: source assets supplied by the human developer. Agents should read from this folder but should not modify or link to these files directly from the game.
 - `game/`: the runnable browser game. Agents write HTML, CSS, JavaScript, copied runtime assets, and game data here.
+- `editor/`: reusable development tools. The [2D level editor](editor/2D/README.md) includes a verification fixture and a local save server; a future 3D editor can live alongside it.
 - `wiki/`: durable project memory for game design, architecture, decisions, plans, asset notes, and level/data formats.
 - `wiki/activity/`: per-session agent activity logs for non-blocking coordination.
 - `temp/`: ephemeral files shared with agents, such as screenshots or throwaway notes.
@@ -32,7 +33,11 @@ Provider-specific files should stay short and point to the shared guidelines/wor
 
 The `/self-review` workflow asks an agent to review recent work for request fit, code risks, and this template's native-ish browser game goals. Agents should recommend it after meaningful work or before commits, but should ask before running it and briefly explain what it checks and why it is useful at that moment.
 
+The [/ui-ux-review workflow](.agent-workflows/ui-ux-review.md) reviews usability, visual design and interaction consistency for **either the game or the editor**, one target per pass. It offers prioritized suggestions without making interface changes. It considers icon-only, text-only and combined controls case by case, including tooltips, colors and icon meanings. Use `/ui-ux-review editor` or `/ui-ux-review game`; if you omit the target, the agent asks which to review. Codex also provides the [repo-scoped skill](.codex/skills/ui-ux-review/SKILL.md) as `$ui-ux-review`.
+
 ## Initializing A Game
+
+For a 2D game, initialization uses the [shared editor data contract](editor/2D/FORMAT.md). The game's runtime consumes the same manifest, settings, catalog and levels edited by the editor.
 
 Use `/init-game` or `$init-game` with Codex to start a new game in this template.
 
@@ -40,7 +45,21 @@ On first use, the skill should ask about the game concept, target style, control
 
 If `/init-game` is run again after the project has already been initialized, the skill should not overwrite the existing wiki or game scaffold. It should summarize what exists and ask what you want to change.
 
+## Migrating An Existing Game
+
+Use `/migrate-game` or `$migrate-game` after copying an existing project's `game/` and `wiki/` into a newer template clone, or updating the template in your existing game repository. The [shared workflow](.agent-workflows/migrate-game.md) and [Codex skill](.codex/skills/migrate-game/SKILL.md) ask how you prepared the project and offer instructions if needed; include those details in your request to skip redundant questions.
+
+Migration checks compatibility, adapts the existing game and updates wiki pages in place without running initialization. It preserves the game's design and authored content, verifies editor/runtime integration, and avoids unnecessary changes when already compatible. It relies on your preparation details and actual compatibility checks, without adding template-version tracking records.
+
 ## Browser-First Development
+
+To open the editor without initializing a game (choose Load example editor on the missing-project screen):
+
+```powershell
+python editor/2D/server.py --open
+```
+
+To edit a future game, add `--project game/game.project.json`. The server is local, confines saves to that manifest's project, and needs no dependencies. See the [editor guide](editor/2D/README.md) for controls, import/export, extensions and verification. Template-only editor work leaves `wiki/` unused.
 
 This template does not require NodeJS by default.
 
@@ -109,6 +128,10 @@ Playable games should include a settings menu by default, preferably opened with
 By default, the settings menu should include fullscreen and virtual gamepad controls when applicable. Fullscreen should work where the browser supports it and degrade gracefully where it does not, especially on mobile browsers.
 
 ## Running The Game
+
+On Windows, double-click `run-editor.bat` or `run-game.bat` in the repository root. Both launchers work from any current directory, detect Python (`python` or `py -3`), and keep the server in their console window. Open the printed URL and press Ctrl+C to stop.
+
+The editor launcher uses `game/game.project.json` when present. Otherwise, the page explains that no game project exists and offers an explicit example/demo load. Example edits stay in memory; fixture saving is disabled in both editor and server. It accepts the editor server's flags, for example `run-editor.bat --open --port 8766` or `run-editor.bat --project path/to/game.project.json`. The game launcher serves `game/` at `http://127.0.0.1:8000/`; pass a different port with `run-game.bat 8001`. Until a game is created, that folder has no playable entry point.
 
 You can ask Codex to run, play, or preview the game. Agents should serve the `game/` directory with a local static server and give you the localhost URL.
 

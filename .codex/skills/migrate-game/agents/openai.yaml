@@ -1,0 +1,4 @@
+interface:
+  display_name: "Migrate Game"
+  short_description: "Adapt an existing game and wiki to an updated template"
+  default_prompt: "Use $migrate-game to integrate my existing game and wiki with this updated template without reinitializing them."

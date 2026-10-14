@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "settings": "data/settings.json",
+  "catalog": "data/elements.json",
+  "assets": "assets/",
+  "assetFiles": [
+    "crate.svg",
+    "player-sheet.svg",
+    "tile-sheet.svg"
+  ],
+  "levels": [
+    {
+      "id": "atrium",
+      "label": "Atrium",
+      "path": "data/levels/atrium.json"
+    },
+    {
+      "id": "garden",
+      "label": "Garden",
+      "path": "data/levels/garden.json"
+    }
+  ],
+  "extensions": {
+    "fixture": true
+  }
+}

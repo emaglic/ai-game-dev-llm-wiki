@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI/UX Review"
+  short_description: "Review usability and visual design of a game or editor"
+  default_prompt: "Use $ui-ux-review to review the editor's UI/UX and suggest improvements."

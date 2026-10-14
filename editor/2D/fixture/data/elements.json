@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "levelProperties": {
+    "camera": {
+      "type": "position",
+      "label": "Camera center",
+      "default": {
+        "x": 320,
+        "y": 180
+      },
+      "help": "World pixels. Select Camera by its outline or in the Level panel, then drag inside the gold viewport.",
+      "space": "world"
+    },
+    "cameraZoom": {
+      "type": "number",
+      "label": "Game camera zoom",
+      "min": 0.1,
+      "max": 8,
+      "step": 0.1,
+      "default": 1,
+      "help": "Reference viewport divided by this zoom. Independent of editor navigation."
+    },
+    "background": {
+      "type": "color",
+      "label": "Background",
+      "default": "#14202c"
+    },
+    "weather": {
+      "type": "enum",
+      "options": [
+        "clear",
+        "rain"
+      ],
+      "default": "clear",
+      "label": "Weather (runtime extension)"
+    },
+    "ambient": {
+      "type": "number",
+      "control": "slider",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "default": 0.5,
+      "label": "Ambient light"
+    }
+  },
+  "elements": [
+    {
+      "id": "floor",
+      "kind": "tile",
+      "label": "Floor",
+      "color": "#334d62",
+      "properties": {},
+      "visual": {
+        "asset": "tile-sheet.svg",
+        "frame": {
+          "x": 0,
+          "y": 0,
+          "width": 32,
+          "height": 32
+        },
+        "fit": "contain"
+      }
+    },
+    {
+      "id": "wall",
+      "kind": "tile",
+      "label": "Wall",
+      "color": "#7b90a3",
+      "properties": {}
+    },
+    {
+      "id": "flowers",
+      "kind": "tile",
+      "label": "Decoration",
+      "color": "#8aad58",
+      "properties": {},
+      "visual": {
+        "asset": "tile-sheet.svg",
+        "frame": {
+          "x": 32,
+          "y": 0,
+          "width": 32,
+          "height": 32
+        },
+        "fit": "contain"
+      }
+    },
+    {
+      "id": "teleporter",
+      "kind": "object",
+      "label": "Teleporter",
+      "color": "#56cbb6",
+      "size": {
+        "width": 40,
+        "height": 40
+      },
+      "properties": {
+        "destination": {
+          "type": "objectRef",
+          "label": "Destination",
+          "targets": [
+            "teleporter"
+          ],
+          "default": null,
+          "overlay": {
+            "kind": "connection",
+            "color": "#98fff1"
+          },
+          "help": "Choose a level and teleporter or pick one on canvas."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "tint": {
+          "type": "color",
+          "default": "#56cbb6"
+        }
+      },
+      "visual": {
+        "editorOnly": true
+      },
+      "collision": {
+        "shape": "rectangle"
+      },
+      "resizable": true
+    },
+    {
+      "id": "spawn",
+      "kind": "object",
+      "label": "Spawn",
+      "color": "#ffdc79",
+      "properties": {
+        "team": {
+          "type": "enum",
+          "options": [
+            "blue",
+            "red"
+          ],
+          "default": "blue"
+        },
+        "facing": {
+          "type": "position",
+          "default": {
+            "x": 1,
+            "y": 0
+          },
+          "space": "local"
+        }
+      },
+      "visual": {
+        "asset": "player-sheet.svg",
+        "frame": {
+          "x": 32,
+          "y": 0,
+          "width": 32,
+          "height": 48
+        },
+        "fit": "contain"
+      },
+      "size": {
+        "width": 32,
+        "height": 48
+      }
+    },
+    {
+      "id": "trigger",
+      "kind": "object",
+      "label": "Trigger",
+      "color": "#b586d5",
+      "resizable": true,
+      "properties": {
+        "radius": {
+          "type": "number",
+          "min": 0,
+          "max": 256,
+          "default": 64,
+          "overlay": {
+            "kind": "radius"
+          }
+        },
+        "count": {
+          "type": "integer",
+          "min": 1,
+          "max": 10,
+          "default": 1
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 120,
+          "default": "Fixture trigger"
+        }
+      }
+    },
+    {
+      "id": "scenery",
+      "kind": "object",
+      "label": "Scenery",
+      "color": "#b88b57",
+      "resizable": true,
+      "asset": "crate.svg",
+      "properties": {
+        "sprite": {
+          "type": "asset",
+          "default": "crate.svg",
+          "label": "Image asset"
+        },
+        "anchor": {
+          "type": "position",
+          "default": {
+            "x": 128,
+            "y": 128
+          },
+          "overlay": {
+            "kind": "box",
+            "width": 32,
+            "height": 32
+          },
+          "space": "world"
+        }
+      },
+      "visual": {
+        "asset": "crate.svg",
+        "fit": "contain"
+      }
+    }
+  ]
+}

@@ -70,6 +70,28 @@ When the project is uninitialized, ask for the minimum information needed to sta
 
 Then scaffold the wiki and starter files using [default-scaffold.md](default-scaffold.md).
 
+### 2D Data And Editor Integration
+
+Once the game is known to be 2D, read [the shared editor guide](../editor/2D/README.md) and [versioned data contract](../editor/2D/FORMAT.md). Scaffold an editor-compatible project manifest, global settings, element catalog and level JSON under the chosen game layout. Use the editor fixture as a format reference; do not turn its example elements or teleporter behavior into mandatory gameplay.
+
+Have the runtime fetch the manifest and resolve all data/assets relative to it. The runtime loads the actual levels edited by the shared editor; avoid hardcoded duplicates. Document units and interpretation in the initialized game's wiki, including camera center, game camera zoom, logical viewport, whole-pixel tile positions and independent tile dimensions, object world coordinates and layer order.
+
+Camera viewport resizing writes the existing camera center/zoom; it does not introduce independent camera dimensions. Honor saved zoom and declared defaults. Layer names are editable labels; use stable IDs/kinds in runtime logic. Grid appearance/linking and panel preferences are editor-local and require no gameplay fields.
+
+Scaffold level format v2: tile x/y/width/height are whole world pixels, tileSize supplies default placement dimensions, and grid controls snapping only. Manifest/settings/catalog remain v1. Render tiles directly at x/y, support overlap and boundary overhang, and never derive tile sizes/positions from snapping. For existing v1 levels, run the explicit migration with backups and update runtime interpretation before playing.
+
+Treat level width and height as developer-configurable world dimensions. The editor exposes them in Level settings and saves them in each level JSON. Derive runtime world/camera boundaries from the loaded values. Resizing preserves content rather than scaling or pruning it; document runtime treatment of out-of-bounds content and verify resized saved levels in the game.
+
+Declare `space: "world"` for position properties that are absolute room coordinates and `space: "local"` for offsets or direction vectors. Anchored resizing shifts all layers, the camera and declared world positions as a single transaction; references remain unchanged. Unmarked position properties are preserved. Verify the game interprets translated coordinates consistently.
+
+Declare typed editable properties for each new element and game-specific global/per-level setting. Choose controls, defaults, constraints, help, valid reference target types and useful overlays. Stable object IDs must survive edits and saves. Validate object/level references and report broken destinations. Support different 2D genres without embedding gameplay rules in the editor.
+
+For visible elements, declare catalog `visual` artwork using the game's runtime assets; recommend the placement size and a representative sprite-sheet source frame. Use art bounds/fit when the artwork extends beyond its collider. For invisible regions, declare `visual.editorOnly` and accurate `collision` geometry. Ensure object bounds, normalized collision points and property-derived interaction sizes agree with the runtime. Confirm palette thumbnails, placed sprites and collision outlines accurately represent what the developer is authoring.
+
+Start the editor with `python editor/2D/server.py --project game/game.project.json --open` when appropriate and authorized to open the browser. Verify a saved/exported level reloads in the editor and the runtime uses the same edited data.
+
+Use the shared editor's existing tools before adding new ones. Agents may upgrade it to fit a game. Before significant editor changes, notify the developer of the intended change and compatibility impact (especially schema changes, major tools, custom controls or saving behavior). Notification does not require approval. Routine fixes and minor additions proceed normally.
+
 Use plain browser-native ES modules by default. Do not require NodeJS, Vite, npm, or a bundler for the initial project. If modular JavaScript is used, load it from HTML with `type="module"` and note that the game should be served from a static local server rather than opened with `file://`.
 
 Use third-party libraries when they materially help the game:
@@ -172,5 +194,5 @@ Adjust the structure to match the actual game. Keep loose files in `game/` to a 
 
 Add a fullscreen control by default unless there is a strong reason not to.
 
-Design level-based games around JSON level data when reasonable so a future level editor can import and export the same format.
+For 2D games, use the existing shared editor-compatible JSON data contract. For other games, design level data around documented JSON formats when reasonable.
 

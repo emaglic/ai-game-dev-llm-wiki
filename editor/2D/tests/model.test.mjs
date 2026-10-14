@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {clone,validateProject,validateDocument,validateValue,History,paint,serialize,referenceTargets} from '../src/model.mjs';
+import {loadProject,importBundle,resolvePath} from '../src/io.mjs';
+import {cameraViewport} from '../src/render.mjs';
+const fixture=new URL('../fixture/',import.meta.url);
+const manifest=JSON.parse(await readFile(new URL('game.project.json',fixture)));
+async function fixtureProject(){return{manifest:clone(manifest),settings:JSON.parse(await readFile(new URL(manifest.settings,fixture))),catalog:JSON.parse(await readFile(new URL(manifest.catalog,fixture))),levels:Object.fromEntries(await Promise.all(manifest.levels.map(async l=>[l.id,JSON.parse(await readFile(new URL(l.path,fixture)))])))};}
+test('fixture validates and round trips nested extension data without loss',async()=>{const p=await fixtureProject();assert.deepEqual(validateProject(p),[]);p.levels.atrium.layers[0].tiles[0].future={physics:{coefficient:0.23}};assert.deepEqual(importBundle(serialize(p)),p);});
+test('unsupported versions, malformed layers, property types and constraints reject',async()=>{const p=await fixtureProject();p.manifest.version=99;assert.match(validateProject(p).join(),/unsupported version/);assert.ok(validateDocument({...p.levels.atrium,layers:[null]},'level').length);assert.ok(validateValue(4.5,{type:'integer'},'count').length);assert.ok(validateValue(-1,{type:'number',min:0},'radius').length);assert.ok(validateValue('no',{type:'boolean'},'enabled').length);p.manifest.version=1;p.catalog.elements[0].properties.future={type:'unknown'};assert.match(validateProject(p).join(),/unsupported property type/);});
+test('target picker filters by type; deleted and cross-level references are checked',async()=>{const p=await fixtureProject(),d=p.catalog.elements.find(e=>e.id==='teleporter').properties.destination;assert.deepEqual(referenceTargets(p,d,'garden').map(o=>o.id),['garden-portal']);assert.deepEqual(referenceTargets(p,d,'constructor'),[]);p.levels.garden.layers[2].objects=p.levels.garden.layers[2].objects.filter(o=>o.id!=='garden-portal');assert.match(validateProject(p).join(),/broken reference/);p.levels.atrium.layers[2].objects[0].properties.destination={level:'garden',object:'garden-spawn'};assert.match(validateProject(p).join(),/invalid target type/);p.levels.garden.layers[2].objects=null;assert.match(validateProject(p).join(),/expected array/);});
+test('tile painting preserves extension fields, rectangle transaction undoes and redoes',async()=>{const p=await fixtureProject();p.levels.atrium.layers[0].tiles[0].extra='preserved';const h=new History(p),next=clone(p),l=next.levels.atrium.layers[0];for(let y=0;y<3;y++)for(let x=0;x<3;x++)paint(l,x,y,'wall');assert.equal(l.tiles[0].extra,'preserved');assert.equal(h.commit(next),true);assert.equal(h.past.length,1);h.undo();assert.deepEqual(h.value,p);h.redo();assert.deepEqual(h.value,next);paint(l,0,0,null);assert.equal(l.tiles.some(t=>t.x===0&&t.y===0),false);h.undo();h.commit({...p,extensions:{branch:true}});assert.equal(h.redo(),false);});
+test('duplicate IDs and duplicate cells reject',async()=>{const p=await fixtureProject();p.levels.atrium.layers[2].objects.push(clone(p.levels.atrium.layers[2].objects[0]));p.levels.atrium.layers[0].tiles.push(clone(p.levels.atrium.layers[0].tiles[0]));assert.match(validateProject(p).join(),/duplicate object ID/);assert.match(validateProject(p).join(),/duplicate tile origin/);});
+test('camera uses reference viewport and game zoom, not editor navigation',()=>{assert.deepEqual(cameraViewport({camera:{x:200,y:100},cameraZoom:2},{width:640,height:360}),{x:40,y:10,width:320,height:180});});
+test('loader resolves every document relative to manifest in a different directory',async()=>{const p=await fixtureProject(),base='http://example.test/elsewhere/game.project.json',files=new Map([[base,p.manifest],[resolvePath(base,p.manifest.settings),p.settings],[resolvePath(base,p.manifest.catalog),p.catalog],...p.manifest.levels.map(l=>[resolvePath(base,l.path),p.levels[l.id]])]);const result=await loadProject(base,async url=>({ok:files.has(url),status:404,json:async()=>clone(files.get(url))}));assert.deepEqual(result.project,p);});
+test('malformed bundles, extra levels and invalid camera convention reject usefully',async()=>{assert.deepEqual(validateProject(null),['project: expected an object']);const p=await fixtureProject();p.levels.unlisted=clone(p.levels.atrium);assert.match(validateProject(p).join(),/not listed in manifest/);delete p.levels.unlisted;p.levels.atrium.settings.cameraZoom=0;assert.match(validateProject(p).join(),/positive game zoom/);delete p.levels;assert.match(validateProject(p).join(),/keyed by manifest/);});
+
+test('editor grid covers visible negative and out-of-level space at snap-aligned multiples',async()=>{
+  const {drawScene}=await import('../src/render.mjs'),lines=[];
+  const ctx={save(){},restore(){},fillRect(){},strokeRect(){},beginPath(){},moveTo(x,y){lines.push([x,y]);},lineTo(){},stroke(){}};
+  const level={width:64,height:64,grid:32,settings:{},layers:[]};
+  drawScene(ctx,{catalog:{elements:[],levelProperties:{}},settings:{}},level,new Map(),{grid:true,gridBounds:{x:-64,y:-32,width:192,height:128},gridSize:{x:32,y:16}});
+  assert.ok(lines.some(([x])=>x<0));assert.ok(lines.some(([x])=>x>level.width));assert.ok(lines.some(([,y])=>y<0));
+  assert.ok(lines.filter(([,y])=>y===-32).every(([x])=>x%32===0));
+});
+
+test('layer hover multiplies other visible opacity without mutating layer settings',async()=>{
+ const {drawScene}=await import('../src/render.mjs'),alphas=[],ctx={save(){},restore(){},fillRect(){},strokeRect(){}};
+ Object.defineProperty(ctx,'globalAlpha',{set(value){alphas.push(value)}});
+ const level={width:64,height:64,grid:32,settings:{},layers:[{id:'a',kind:'tile',visible:true,opacity:.6,tiles:[]},{id:'b',kind:'tile',visible:true,opacity:.8,tiles:[]},{id:'hidden',kind:'tile',visible:false,opacity:1,tiles:[]}]},before=JSON.stringify(level);
+ drawScene(ctx,{catalog:{elements:[],levelProperties:{}},settings:{}},level,new Map(),{hoveredLayer:'a'});
+ assert.deepEqual(alphas,[.6,.8*.1]);assert.equal(JSON.stringify(level),before);
+});

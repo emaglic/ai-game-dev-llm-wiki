@@ -1,0 +1,75 @@
+# Maintaining the shared 2D editor
+
+Read [FORMAT.md](FORMAT.md) and [README.md](README.md) before changing editor behavior. This is reusable template infrastructure; template-only work leaves `game/` and `wiki/` unused. Provider entry files point to `.agents/project-guidelines.md`; update shared guidance rather than adding provider-specific rules.
+
+## Version and runtime requirements
+
+- Manifest, settings and catalog: version 1. Levels: version 2, with integer pixel tile x/y/width/height and independent tileSize defaults. The legacy level-v1 schema is for migration only.
+- `grid` and editor Grid X/Y are snapping aids. Runtime code draws v2 tiles directly at their pixel coordinates, allows overlap/overhang, and derives world dimensions from the level.
+- Catalog artwork, source frames and collision shapes must match runtime interpretation. World/local position metadata determines what anchored resizing translates. Unknown extension fields must survive editing/saving.
+- Notify the developer before significant schema, tool, custom control or save-behavior changes, describing compatibility impact. Breaking changes require a new version and an explicit migration. Notification is not an approval gate.
+
+## File responsibilities
+
+| Files | Responsibility |
+| --- | --- |
+| `src/app.js`, `index.html`, `style.css` | UI, selection, gestures, settings and example onboarding |
+| `src/menus.mjs` | File/View/Help disclosures, keyboard navigation and help dialogs |
+| `src/workspace.mjs` | Browser-local overlay/panel preferences, panel resizing and View controls; never serialized as game data |
+| `src/model.mjs` | Validation, serialization, history, indexed tile painting and tile moves |
+| `src/tiles.mjs`, `src/interactions.mjs` | Pixel tile picking/strokes/fill and pointer geometry |
+| `src/selection.mjs` | Constant-screen-size handles and anchored Alt/Shift geometry; camera resize changes zoom, level resize uses the existing translation contract |
+| `src/level-resize.mjs` | Anchored resize transactions and world-position translation |
+| `src/controls.mjs` | Typed property controls and custom control registration |
+| `src/appearance.mjs`, `src/render.mjs` | Artwork, collision geometry, hit testing, layer rendering and overlays |
+| `src/io.mjs`, `server.py` | Loading, optimistic revisions, validation and confined filesystem saves |
+| `schemas/`, `migrate_levels.py` | Serialized contracts and explicit v1-to-v2 conversion with backups |
+| `fixture/`, `preview.html`, `src/preview.js` | Example data and a minimal contract consumer, not an actual game |
+| `vendor/material-icons/` | Local SVG subset, pinned provenance and license |
+
+Browser and Python validators are independent: update both and their tests when extending serialized fields. The Python schema checker supports a documented subset of JSON Schema; adding schema keywords requires implementing their validation too. Keep gestures cancellable and each completed stroke/move/resize one undo step. Preserve layer locks for ordinary editing; anchored level resize translates every layer together.
+
+## Editor UI conventions
+
+These are the default design conventions for extensions to this editor, including game-specific changes in a cloned template. An explicit human developer instruction may override them for the current task or project. Honor that direction without asking for redundant permission or treating a visual exception as a blocker. These design defaults do not replace the separately documented data compatibility, save or coordination requirements.
+
+Before adding UI, inspect the current interface, its usage guide and the nearby implementation to identify the pattern being extended. Prefer extending an existing control or workflow when it fits the task. Choose placement and behavior for the human developer's authoring workflow; game-specific functionality should feel like part of the editor.
+
+- **Visual language:** Reuse the existing dark surfaces, typography, spacing, rounded controls and borders in `style.css`. Selection uses the stronger teal fill; hover uses the quieter fill over the same area. Maintain readable disabled states and visible keyboard focus. Match surrounding controls rather than introducing a separate theme, arbitrary accent color or isolated styling overrides for each feature. Improve shared styles when a pattern needs to change.
+- **Icons and labels:** Use the existing local icon system and follow its provenance instructions for additions. Pick icon-only, text-only or combined controls case by case. Familiar compact actions can remain icon-only with meaningful tooltips and accessible names; do not add text everywhere or replace unfamiliar actions with unexplained icons. Match icon sizes and alignment within each group. Keep state icons, such as linked/unlinked or visible/hidden, semantically consistent. Use warning/error colors for their meaning, not ordinary actions or layer types.
+- **Placement and scope:** Keep frequent canvas tools and navigation aids in the editing toolbar, with consistent group spacing and separators. Place occasional project actions in File, view/workspace choices in View and explanations in Help. Use collapsible sections for named menu groups; reset sections to collapsed on menu close and constrain long menus to a scrollable viewport height. Standalone commands can remain directly visible. Extend those menus before adding scattered overflow menus; contextual options such as grid appearance can stay beside the controls they affect. Layers/Palette and Selection/Level tabs should connect visually to their content. Properties of the selected target belong in Selection; shared level/global settings belong in Level, with clear global scope. When controls appear in both, use matching labels and synchronized values.
+- **Interaction language:** Preserve single-click selection, separate accordion expansion, discoverable renaming, front-to-back layer display, established snapping, fixed-screen-size handles and Alt/Shift behavior. Use the current transaction and cancellation paths so an authored edit supports undo and Escape where applicable. Keep layer lock/visibility behavior and the documented level-resize exception. Make temporary modes visible and provide a clear exit. Do not silently repurpose a familiar input or shortcut for an unrelated action.
+- **Layout and accessibility:** Fit additions within the supported desktop workspace and panel minimums. Keep panel scrolling, resize/collapse handles and restoring hidden panels usable. Check long labels, expanded controls and a smaller desktop viewport. Retain accessible names, keyboard reachability and focus after updates/dialogs; preserve DOM identity when gestures such as native double-click depend on it. Avoid placing controls over essential canvas feedback.
+- **Integration and feedback:** Use typed property controls, existing rendering/geometry helpers and shared styles before creating one-off widgets. Identify whether a new option belongs in project data or local workspace preferences; do not dirty game data for view-only choices. Show validation and operation feedback in the established locations, and ensure visual previews agree with the applied result. Preserve catalog-driven extensibility rather than hardcoding a particular game's objects into generic UI.
+
+When a new pattern is needed, explain the user benefit and tradeoff briefly in the change summary. Update the reusable editor documentation when behavior changes. For a game-specific intentional override, record its durable rationale in that game's existing wiki when relevant; template-only work documents decisions here and leaves the wiki untouched. A developer-directed exception is a valid design choice, not automatically a review finding. Review its usability and consistency with the intended exception in mind.
+
+Validate changed interactions with appropriate existing checks and inspect the rendered result when browser tools are available. `/ui-ux-review editor` can assess design fit when requested; `/self-review` addresses implementation risks. Neither review is an automatic prerequisite or approval gate for routine editor changes.
+
+## Current interaction invariants
+
+- Select/move, Paint/place and Rectangle fill are the three toolbar tools. Paint/place on object layers selects/moves existing objects, places on empty space and uses Alt+left-click for overlapping placement. Selected resize handles take priority over Alt placement; On tile layers, existing tiles select/move, empty-space strokes paint and Alt+left-drag forces painting/replacement. Stroke intent is fixed at pointer-down. Object resize and camera positioning are selection behaviors, not separate tools. Objects and tiles belong to layers; Camera and Level dimensions are editor selection targets, not layer records. Their Selection controls and Level controls edit the same values. Shared dimension drafts and anchors must remain synchronized with unique DOM IDs.
+- Eight resize handles retain a fixed screen size. Alt resizes about the center; Shift preserves the starting aspect ratio; integer rounding can slightly approximate the ratio/center. Object moves/resizes respect active layer locks. Level handles use `resizeLevel` and translate all authored content, never scale it. Camera handles always preserve reference viewport aspect ratio and write camera center/zoom, respecting declared zoom limits; do not introduce independent camera width/height fields. Effective camera defaults must match outline rendering and hit testing.
+- Layer hover/focus previews multiply other visible layers' rendering opacity by 0.1 and clear on leaving/closing. They must not mutate visibility, opacity, history or serialized project data. The layer panel displays the serialized layer array in reverse (frontmost first). Keep runtime array order back-to-front; Raise increases the serialized index. Layer type is separate from its display name. Renaming changes only `name`, supports undo and preserves stable IDs. Name clicks preserve header DOM during selection so native double-click still opens renaming; header toggles/order buttons must not expand the accordion or rename the layer.
+- Rectangle fill left-drags paint tiles; right-drags preview a red deletion area for either layer kind. Delete only on release, using collision shapes and positive interior overlap; edge-only contact must not erase neighboring grid tiles. Cancellation restores the gesture, and changing the layer cancels it. Other tools use continuous swept right-drag erasing. Broken references after deleting targets remain visible and repairable.
+- Grid spacing is saved per level in `extensions.editor2D.grid`. Linking, visibility, color/opacity, panel sizes/visibility and overlay toggles live in browser-local `editor2D.workspace` preferences. Linking preserves the captured X:Y ratio with positive integer rounding; typed values and presets share validation and one undo step. View preferences do not dirty, serialize or enter project history. Reset workspace restores panel sizes/visibility only; both panel defaults/minimums are 290px.
+- The grid spans visible world coordinates beyond the level, including negatives. Render only visible lines and reduce line density at low zoom using integer multiples; never alter the saved spacing or snapping. Grid opacity must affect grid rendering only. Selected elements retain useful guides even when general overlays are hidden.
+- File owns Save, Reload, manifest Load/Cancel, import/export and runtime preview. Fit level also has a toolbar shortcut. Keep keyboard access, tooltips, modal cancellation and local preference persistence when adjusting these interfaces.
+
+These UI additions retain manifest/settings/catalog v1 and level v2. Existing v2 games need no migration for this batch; game runtimes still must consume saved dimensions, positions, layer order, camera center/zoom and catalog defaults. Verify those changes in an actual game when integrating; desktop fixture checks cannot prove another game's behavior.
+
+When maintaining a game's integration with this editor, follow the [saved-editor change checkpoints](../../.agents/project-guidelines.md#saved-editor-changes-during-active-work). Recheck the actual manifest-referenced project data before related writes and verification, preserve human-authored changes and reassess runtime dependencies. Only saved edits are visible on disk; do not add polling or background watchers. Template-only editor work does not require populating the game wiki or treating the fixture as a human game project.
+
+## Save and migration constraints
+
+The server selects this game's manifest at launch, binds to loopback, checks host/origin, confines resolved paths and rejects stale revisions. Example fixture writes must remain blocked by both UI and server. An imported bundle has no disk destination; exporting it is the fallback. Export is a single editor backup bundle, not a ZIP or game-ready replacement directory.
+
+Run migration with the editor server stopped and other writers idle. Agents migrating files under `game/` must acquire the normal game write lock. Dry-run first, apply explicitly, preserve `.json.v1.bak` originals and update the runtime before playing converted levels. Saving/migration stages and rolls back ordinary errors but is not crash-safe across multiple files.
+
+## Verification and remaining scope
+
+Use the commands in README.md: all JavaScript model tests, all Python `test_*.py` tests and the Chrome/Edge browser workflow. Browser tests use temporary game copies, never saved changes to the bundled fixture. Check actual game save/reload behavior after integrating editor changes into a game; the fixture preview only verifies the contract.
+
+Automated UI coverage currently uses desktop Chromium. Mobile/touch, Firefox and Safari need separate validation if targeted. This editor uses desktop pointer/keyboard interactions; physical/virtual gamepads and fullscreen requirements apply to playable games rather than this tooling UI. Tile rendering and shape queries are not chunked/virtualized; use runtime spatial indexing and profile representative large levels when needed. Drawing-count and collision costs matter more than whether tile coordinates are cells or pixels.
+
+Deferred features are listed in README.md, including flood fill, multi-selection, animated editor sprites, graphical atlas authoring and a 3D editor. Actual gameplay behavior belongs to the game. No existing external game has been migrated in this template session.

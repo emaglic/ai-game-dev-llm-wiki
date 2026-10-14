@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "viewport": {
+    "width": 640,
+    "height": 360
+  },
+  "properties": {
+    "difficulty": {
+      "type": "enum",
+      "label": "Difficulty",
+      "options": [
+        "relaxed",
+        "normal",
+        "hard"
+      ],
+      "default": "normal"
+    },
+    "music": {
+      "type": "boolean",
+      "label": "Music",
+      "default": true
+    }
+  },
+  "values": {
+    "difficulty": "normal",
+    "music": true
+  },
+  "extensions": {
+    "runtimeExampleOnly": true
+  }
+}
