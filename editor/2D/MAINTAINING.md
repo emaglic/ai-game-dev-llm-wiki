@@ -14,6 +14,7 @@ Read [FORMAT.md](FORMAT.md) and [README.md](README.md) before changing editor be
 | Files | Responsibility |
 | --- | --- |
 | `src/app.js`, `index.html`, `style.css` | UI, selection, gestures, settings and example onboarding |
+| `src/menus.mjs` | Project/View/Help disclosures, keyboard navigation and help dialogs |
 | `src/workspace.mjs` | Browser-local overlay/panel preferences, panel resizing and View controls; never serialized as game data |
 | `src/model.mjs` | Validation, serialization, history, indexed tile painting and tile moves |
 | `src/tiles.mjs`, `src/interactions.mjs` | Pixel tile picking/strokes/fill and pointer geometry |
