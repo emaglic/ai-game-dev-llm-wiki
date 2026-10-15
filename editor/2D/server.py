@@ -101,7 +101,8 @@ def validate_project(project):
         level = levels.get(entry['id'])
         if isinstance(level, dict) and level.get('version') == 1:
             errors.append(f'{entry["id"]}: level v1 requires explicit migration to pixel-position v2')
-        es = schema_errors(level, level_schema, entry['id'])
+        selected_schema = json.loads((EDITOR / 'schemas' / f'level-v{level["version"]}.schema.json').read_text(encoding='utf-8')) if isinstance(level, dict) and level.get('version') in (2, 3) else level_schema
+        es = schema_errors(level, selected_schema, entry['id'])
         errors.extend(es)
         if es:
             continue
@@ -120,6 +121,13 @@ def validate_project(project):
             layer_ids.add(layer['id'])
             cells = set()
             for item in layer.get('tiles' if layer['kind'] == 'tile' else 'objects', []):
+                if layer['kind'] == 'background':
+                    if item['id'] in object_ids:
+                        errors.append(f'duplicate object ID {item["id"]}')
+                    object_ids.add(item['id'])
+                    if item['properties'].get('asset') and item['properties']['asset'] not in manifest.get('assetFiles', []):
+                        errors.append('background asset not listed in manifest')
+                    continue
                 t = types.get(item['type'])
                 if not t or t['kind'] != layer['kind']:
                     errors.append(f'{entry["id"]}: unknown element {item["type"]}')

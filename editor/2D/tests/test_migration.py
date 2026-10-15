@@ -49,6 +49,19 @@ class MigrationTests(unittest.TestCase):
                 self.assertEqual(json.loads(p.with_suffix('.json.v1.bak').read_text())['version'], 1)
             self.assertEqual(migrate_levels.migrate(manifest, True), [])
 
+    def test_explicit_v3_upgrade_preserves_v2_and_backs_up(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'game'
+            shutil.copytree(ROOT / 'fixture', root)
+            manifest = root / 'game.project.json'
+            before = (root / 'data/levels/atrium.json').read_bytes()
+            self.assertEqual(len(migrate_levels.migrate(manifest, target_version=3)), 2)
+            self.assertEqual((root / 'data/levels/atrium.json').read_bytes(), before)
+            migrate_levels.migrate(manifest, True, 3)
+            self.assertEqual(json.loads((root / 'data/levels/atrium.json').read_text())['version'], 3)
+            self.assertEqual((root / 'data/levels/atrium.json.v2.bak').read_bytes(), before)
+            self.assertEqual(migrate_levels.migrate(manifest, True, 3), [])
+
     def test_unknown_versions_fractional_sizes_and_reserved_conflicts_reject(self):
         with self.assertRaises(ValueError):
             migrate_levels.convert_level({'version': 99})

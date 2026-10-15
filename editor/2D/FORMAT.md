@@ -1,6 +1,6 @@
-# Project data contract: manifest/settings/catalog v1, levels v2
+# Project data contract: manifest/settings/catalog v1, levels v2/v3
 
-Manifest, settings and catalog documents have `version: 1`; level documents have `version: 2`. The [JSON Schemas](schemas/) use draft 2020-12, with `additionalProperties: true` to preserve extensions. `src/model.mjs` is the browser/runtime validator and serializer; the save server validates schemas and semantic properties/references independently. Unsupported document versions, layer kinds or property types reject instead of being dropped. Known field types and catalog constraints must validate; unknown fields are round-tripped. Use `extensions` for namespaced game metadata where practical.
+Manifest, settings and catalog documents have `version: 1`; level documents use `version: 2` for pixel tile/object levels or `version: 3` when Background layers are enabled. Both are supported; v3 preserves v2 pixel semantics. The [JSON Schemas](schemas/) use draft 2020-12, with `additionalProperties: true` to preserve extensions. `src/model.mjs` is the browser/runtime validator and serializer; the save server validates schemas and semantic properties/references independently. Unsupported document versions, layer kinds or property types reject instead of being dropped. Known field types and catalog constraints must validate; unknown fields are round-tripped. Use `extensions` for namespaced game metadata where practical.
 
 ## Manifest
 
@@ -82,6 +82,10 @@ For invisible triggers/teleport areas, set `visual.editorOnly: true`. The editor
 
 Level dimensions are positive world pixels; grid spacing is a positive integer pixel count. **Tiles use whole-pixel top-left x/y and explicit positive integer width/height**, not cell indices. Draw a tile directly at `(tile.x, tile.y)` with its own dimensions. Negative positions, boundary overhang and overlap are supported. Within a layer, later records draw on top; picking uses the topmost actual collision shape. Exact duplicate origins are invalid. Painting at an existing origin changes the type and preserves dimensions/extensions; erasing removes whole records. Tile defaults are in `tileSize: {width,height}` (positive integers), with optional catalog `size` overriding defaults for new placements. Existing tiles retain their explicit sizes.
 
+Tile layers may declare optional boolean `solid`. **False** disables movement-blocking tile collisions for that entire layer. **True or missing** permits the game's normal per-tile collision rules; it does not force decorative/non-blocking tile types to become collidable. New tile layers save `solid: true`. Object layers have no Solid control; their interactions remain object/game-defined. Solidity is independent of drawing order, visibility and editor locking; do not derive collisions from those UI flags or layer names. This additive optional field keeps level version 2 and needs no structural conversion for missing fields. Existing game runtimes must be updated to honor it before treating Solid as a working gameplay control.
+
+Render the level's layer array back-to-front (index 0 first); the layer panel shows the reverse, with frontmost at the top. Live entities, including the player created from a spawn object, must render at their owning object layer's position in that sequence. Do not draw all tiles first and entities afterward. A tile layer above the player's object layer must occlude the player where their artwork overlaps, regardless of solidity. Retain an entity's owning layer ID when creating/moving its runtime representation. Verify this in the actual game, since the fixture preview has no gameplay collision/player simulation.
+
 Grid X/Y is optional metadata `extensions.editor2D.grid: {x:16,y:24}`, falling back to level `grid` for both axes. It controls grid lines and placement/movement snapping only. With Snap disabled, tile placement/movement rounds to whole pixels. Painting snaps origins down to the grid; dragging rounds the desired origin to the nearest grid line. Rectangle fill repeats stamps at tile-size intervals from its starting origin, avoiding a tile for every pixel of an unsnapped drag. Right-drag erasing uses swept collision geometry, including off-grid/overlapping tiles; Rectangle fill instead deletes whole records overlapping the interior of its red rectangle on release, excluding edge-only contact. Picking/erasing do not infer cell occupancy. Runtime spatial indexing may use any bucket size independently of these stored coordinates.
 
 Level settings exposes top-level width/height and a 3x3 anchor. **Apply resize** is one undoable transaction. Anchor factors are 0 (left/top), 0.5 (center), or 1 (right/bottom). Translation is `dx = Math.round((newWidth-oldWidth)*anchorX)` and similarly for Y; rounding follows JavaScript (.5 toward positive infinity). Tiles, objects, the camera and declared world-position properties move by the same integer pixel offset across all layers, including locked/hidden layers. No 32px/64px increments are required. Centering an odd size change is approximate within half a pixel, with the actual integer offset displayed before applying. Sizes and references stay unchanged. Shrinking preserves out-of-bounds content and warns without blocking saving.
@@ -105,3 +109,38 @@ For unusual controls, import `customControls` from `src/controls.mjs` and regist
 For new visualizations, extend `src/render.mjs` and validate/document the overlay metadata in the browser model and server schemas. For additional tools, keep one gesture one history transaction, honor locking, and preserve unknown fields. Browser modules are reusable by a game's runtime but their paths must be explicit; alternatively implement the documented format independently. The fixture preview is a concrete consumer.
 
 Before significant schema/tool/control/save changes, agents notify the human developer of intended behavior and compatibility impact. A breaking format requires a new version and an explicit migration path; do not silently rewrite unsupported documents. Routine fixes/minor additions can proceed normally. Verify serialization, constraints, references, history, server confinement and saved data loading in the actual runtime.
+
+## Background layers (level v3)
+
+Background is a distinct, non-colliding layer kind; its position in the same layer array determines background versus foreground drawing. Never convert it into gameplay colliders or object-reference targets. Catalog v1 continues to describe tiles/game objects; Background uses built-in image/color records, not catalog element definitions.
+
+```json
+{
+  "id": "near-foliage", "name": "Foreground foliage", "kind": "background",
+  "visible": true, "locked": false, "opacity": 1,
+  "parallax": {"x": 1.5, "y": 1},
+  "objects": [{
+    "id": "foliage-1", "type": "background-image",
+    "x": 0, "y": 0, "width": 1600, "height": 300,
+    "properties": {"asset": "foliage.png", "scaleX": 2, "scaleY": 2,
+      "flipX": false, "flipY": false, "repeat": true}
+  }]
+}
+```
+
+Image assets must be listed in manifest `assetFiles`. Records have stable IDs (unique with game objects), finite authored x/y, positive bounds of at least 1 pixel, and a `properties` object. `background-color` uses `properties.color` (`#rrggbb`, default `#334d62`) to fill its bounds. `background-image` uses `asset` (default empty/unassigned), positive scale factors `scaleX/Y` (default 1, minimum 0.001), and boolean `flipX/Y` and `repeat` (default false). Optional `properties.frame` is a positive source-pixel crop `{x,y,width,height}`, using the same bounds rules as sprite frames; without it the entire image is used. Crop definition is currently JSON-authored; asset/scale/flip/repeat are Selection controls. Preserve unrelated extension fields.
+
+Bounds and image scale are independent: resizing changes the clipped coverage area, never the image scale. Image origin is top-left within the bounds. Repeat off draws one scaled image, leaving uncovered space transparent; repeat on fills bounds with scaled copies. Flip each image copy inside its original footprint, preserving its origin and absolute dimensions. Use source-sized stamps with pattern transforms and clipping, not a loop over every repeat or a huge canvas sized to the object's bounds. Color ignores image controls.
+
+Let C be the camera viewport's **top-left world coordinate** (`camera center - reference viewport / cameraZoom / 2`), not the editor pan offset. Let A be the authored element position, and P the nonnegative layer parallax factor per axis (default 1). Render at world position `A + (1-P)*C`, then apply the ordinary camera transform. Screen-space placement before zoom is therefore `A - P*C`: P=0 is camera-locked, P=1 world-fixed, 0<P<1 distant scenery, P>1 near foreground. Draw order is independent of P. Camera movement, zoom/defaults and the origin convention must match between editor and runtime.
+
+Picking, dragging, handles and erasing use the inverse transform: subtract `(1-P)*C` from the displayed world point. Changing a factor from oldP to newP preserves the current composition by adding `(newP-oldP)*C` to authored positions on that axis. Anchored level resizing shifts the camera/world by integer D and shifts each Background object's authored position by `P*D`; background positions can therefore be fractional. This keeps camera-locked A unchanged and world-fixed A shifted like gameplay content. Never round those offsets to grid or scale objects while resizing a level.
+
+Adding a Background layer explicitly upgrades that level to v3 (undo restores its former version). Other levels can remain v2. Existing v2 levels are accepted without edits; runtimes must support v3 before using Background layers. For a backed-up explicit project-wide upgrade:
+
+```powershell
+python editor/2D/migrate_levels.py --project game/game.project.json --target-version 3
+python editor/2D/migrate_levels.py --project game/game.project.json --target-version 3 --apply
+```
+
+The dry-run does not write; apply preserves `.v1.bak` or `.v2.bak` according to each source file's version and never downgrades existing v3. It adds no background content or gameplay behavior. Default migration remains legacy v1 to pixel v2. Verify foreground occlusion, camera-locked/world-fixed/fractional/fast parallax, repeat/scale/flip/clipping, selection and level-resize offsets in the actual game.

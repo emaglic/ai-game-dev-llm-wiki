@@ -32,3 +32,16 @@ test('layer hover multiplies other visible opacity without mutating layer settin
  drawScene(ctx,{catalog:{elements:[],levelProperties:{}},settings:{}},level,new Map(),{hoveredLayer:'a'});
  assert.deepEqual(alphas,[.6,.8*.1]);assert.equal(JSON.stringify(level),before);
 });
+
+test('tile layer solidity is optional, boolean, preserved in bundles and independent of layer order',async()=>{
+ const p=await fixtureProject(),layer=p.levels.atrium.layers[0],order=p.levels.atrium.layers.map(l=>l.id);
+ delete layer.solid;assert.deepEqual(validateProject(p),[]);
+ for(const value of [true,false]){layer.solid=value;assert.deepEqual(validateProject(p),[]);assert.equal(importBundle(serialize(p)).levels.atrium.layers[0].solid,value);assert.deepEqual(p.levels.atrium.layers.map(l=>l.id),order);}
+ for(const value of ['false',0,null]){layer.solid=value;assert.ok(validateProject(p).some(e=>e.includes('solid')));}
+});
+
+test('Background records require v3 and remain separate from game object references',async()=>{
+ const p=await fixtureProject();p.levels.atrium.layers.push({id:'bg',kind:'background',visible:true,locked:false,opacity:1,parallax:{x:0,y:.5},objects:[{id:'bg-1',type:'background-color',x:0,y:0,width:200,height:100,properties:{color:'#334455'}}]});
+ assert.ok(validateProject(p).length);p.levels.atrium.version=3;assert.deepEqual(validateProject(p),[]);assert.deepEqual(importBundle(serialize(p)),p);
+ p.levels.atrium.layers.at(-1).parallax.x=-1;assert.ok(validateProject(p).length);
+});

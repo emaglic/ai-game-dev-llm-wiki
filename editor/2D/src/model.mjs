@@ -1,3 +1,4 @@
+import {backgroundErrors} from './backgrounds.mjs';
 // Shared by editor, fixture runtime, and future game runtimes. No DOM dependencies.
 import {validateAppearance} from './appearance.mjs';
 export const VERSION = 1;
@@ -10,7 +11,7 @@ export function validateDocument(doc, kind) {
   const errors = [], add = (p,m) => errors.push(`${kind}.${p}: ${m}`);
   if (!plain(doc)) return [`${kind}: expected an object`];
   const expected=kind==='level'?LEVEL_VERSION:VERSION;
-  if(doc.version!==expected)add('version',`unsupported version ${doc.version}; expected ${expected}${kind==='level'&&doc.version===1?'. Convert with python editor/2D/migrate_levels.py --project PATH --apply':''}`);
+  if(kind==='level'?![2,3].includes(doc.version):doc.version!==expected)add('version',`unsupported version ${doc.version}; expected ${kind==='level'?'2 or 3':expected}${kind==='level'&&doc.version===1?'. Convert with python editor/2D/migrate_levels.py --project PATH --apply':''}`);
   const str = (v,p) => { if(typeof v !== 'string' || !v) add(p,'expected nonempty string'); };
   const num = (v,p,min=0) => { if(!finite(v)||v<min) add(p,`expected finite number >= ${min}`); };
   const defs = (v,p) => {
@@ -48,11 +49,13 @@ export function validateDocument(doc, kind) {
     if(!Array.isArray(doc.layers))add('layers','expected array');
     else {const layers=new Set(),objects=new Set();doc.layers.forEach((l,i)=>{
       const p=`layers[${i}]`;if(!plain(l)){add(p,'expected object');return;}str(l.id,`${p}.id`);if(layers.has(l.id))add(`${p}.id`,'duplicate');layers.add(l.id);
-      if(!['tile','object'].includes(l.kind))add(`${p}.kind`,'unsupported layer kind');
+      if(!['tile','object',...(doc.version===3?['background']:[])].includes(l.kind))add(`${p}.kind`,'unsupported layer kind');
+      if(l.kind==='background'&&l.parallax!==undefined)for(const a of ['x','y'])if(!finite(l.parallax?.[a])||l.parallax[a]<0)add(`${p}.parallax.${a}`,'expected nonnegative finite factor');
       if(typeof l.visible!=='boolean'||typeof l.locked!=='boolean')add(p,'visible and locked must be boolean');
+      if(l.kind==='tile'&&l.solid!==undefined&&typeof l.solid!=='boolean')add(`${p}.solid`,'expected boolean');
       if(!finite(l.opacity)||l.opacity<0||l.opacity>1)add(`${p}.opacity`,'expected 0..1');
       const key=l.kind==='tile'?'tiles':'objects';if(!Array.isArray(l[key])){add(`${p}.${key}`,'expected array');return;}
-      const cells=new Set();l[key].forEach((o,j)=>{const q=`${p}.${key}[${j}]`;if(!plain(o)){add(q,'expected object');return;}str(o.type,`${q}.type`);
+      const cells=new Set();l[key].forEach((o,j)=>{const q=`${p}.${key}[${j}]`;if(!plain(o)){add(q,'expected object');return;}str(o.type,`${q}.type`);if(l.kind==='background')errors.push(...backgroundErrors(o,q));
         for(const axis of ['x','y']) if(!finite(o[axis])||(l.kind==='tile'&&!Number.isInteger(o[axis])))add(`${q}.${axis}`,l.kind==='tile'?'expected integer pixel coordinate':'expected finite world coordinate');
         if(l.kind==='tile'){for(const axis of ['width','height'])if(!Number.isInteger(o[axis])||o[axis]<1)add(`${q}.${axis}`,'expected positive integer pixel size');const cell=`${o.x},${o.y}`;if(cells.has(cell))add(q,'duplicate tile origin');cells.add(cell);}
         else {str(o.id,`${q}.id`);if(objects.has(o.id))add(`${q}.id`,'duplicate object ID');objects.add(o.id);num(o.width,`${q}.width`,1);num(o.height,`${q}.height`,1);if(!plain(o.properties))add(`${q}.properties`,'expected object');}
@@ -76,7 +79,7 @@ export function validateValue(value, def, path) {
   }return errors;
 }
 export function defaults(definitions) {return Object.fromEntries(Object.entries(definitions).filter(([,d])=>d.default!==undefined).map(([k,d])=>[k,clone(d.default)]));}
-export function objects(level){return level.layers.filter(l=>l.kind==='object').flatMap(l=>l.objects);}
+export function objects(level){return level.layers.filter(l=>l.kind==='object'||l.kind==='background').flatMap(l=>l.objects);}
 export function referenceTargets(project,definition,levelId){const level=Object.hasOwn(project.levels,levelId)?project.levels[levelId]:null;return level&&Array.isArray(level.layers)?level.layers.filter(l=>plain(l)&&l.kind==='object'&&Array.isArray(l.objects)).flatMap(l=>l.objects).filter(o=>plain(o)&&(!definition.targets?.length||definition.targets.includes(o.type))):[];}
 export function validateProject(project) {
   if(!plain(project))return ['project: expected an object'];
@@ -87,7 +90,7 @@ export function validateProject(project) {
   const types=new Map(project.catalog.elements.map(e=>[e.id,e]));
   function values(vals,defs,path){for(const [k,d] of Object.entries(defs)){const v=vals[k]??(vals[k]===null?null:d.default);errors.push(...validateValue(v,d,`${path}.${k}`));if(d.type==='objectRef'&&v&&typeof v==='object'){const t=referenceTargets(project,d,v.level).find(o=>o.id===v.object);if(!t)errors.push(`${path}.${k}: broken reference ${v.level}/${v.object} or invalid target type`);}if(d.type==='asset'&&v&&!project.manifest.assetFiles?.includes(v))errors.push(`${path}.${k}: asset not listed in manifest.assetFiles: ${v}`);}}
   values(project.settings.values,project.settings.properties,'settings.values');
-  for(const entry of project.manifest.levels){const l=project.levels[entry.id];const e=validateDocument(l,'level');errors.push(...e.map(x=>`${entry.id}: ${x}`));if(e.length)continue;if(l.id!==entry.id)errors.push(`${entry.id}: level ID differs from manifest`);values(l.settings,project.catalog.levelProperties,`${l.id}.settings`);if(l.settings.camera!==undefined)errors.push(...validateValue(l.settings.camera,{type:'position'},`${l.id}.settings.camera`));if(l.settings.cameraZoom!==undefined&&(!finite(l.settings.cameraZoom)||l.settings.cameraZoom<=0))errors.push(`${l.id}.settings.cameraZoom: expected positive game zoom`);for(const layer of l.layers)for(const o of layer.kind==='tile'?layer.tiles:layer.objects){const t=types.get(o.type);if(!t||t.kind!==layer.kind){errors.push(`${l.id}/${layer.id}: unknown ${layer.kind} type ${o.type}`);continue;}if(layer.kind==='object')values(o.properties,t.properties,`${l.id}/${o.id}`);}}
+  for(const entry of project.manifest.levels){const l=project.levels[entry.id];const e=validateDocument(l,'level');errors.push(...e.map(x=>`${entry.id}: ${x}`));if(e.length)continue;if(l.id!==entry.id)errors.push(`${entry.id}: level ID differs from manifest`);values(l.settings,project.catalog.levelProperties,`${l.id}.settings`);if(l.settings.camera!==undefined)errors.push(...validateValue(l.settings.camera,{type:'position'},`${l.id}.settings.camera`));if(l.settings.cameraZoom!==undefined&&(!finite(l.settings.cameraZoom)||l.settings.cameraZoom<=0))errors.push(`${l.id}.settings.cameraZoom: expected positive game zoom`);for(const layer of l.layers)for(const o of layer.kind==='tile'?layer.tiles:layer.objects){if(layer.kind==='background'){if(o.properties.asset&&!project.manifest.assetFiles?.includes(o.properties.asset))errors.push(`${l.id}/${o.id}: background asset not listed in manifest`);continue;}const t=types.get(o.type);if(!t||t.kind!==layer.kind){errors.push(`${l.id}/${layer.id}: unknown ${layer.kind} type ${o.type}`);continue;}if(layer.kind==='object')values(o.properties,t.properties,`${l.id}/${o.id}`);}}
   return errors;
 }
 export function assertProject(p){const e=validateProject(p);if(e.length)throw new Error(e.join('\n'));return p;}

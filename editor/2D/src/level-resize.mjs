@@ -18,6 +18,7 @@ export function resizeLevel(level,catalog,width,height,anchor){
   const types=new Map(catalog.elements.map(e=>[e.id,e]));
   for(const layer of next.layers){
     if(layer.kind==='tile')for(const tile of layer.tiles){tile.x+=plan.dx;tile.y+=plan.dy;}
+    else if(layer.kind==='background')for(const o of layer.objects){o.x+=plan.dx*(layer.parallax?.x??1);o.y+=plan.dy*(layer.parallax?.y??1);}
     else for(const o of layer.objects){o.x+=plan.dx;o.y+=plan.dy;shiftProperties(o.properties,types.get(o.type)?.properties);}
   }
   return next;

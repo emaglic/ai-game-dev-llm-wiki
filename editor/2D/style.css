@@ -136,3 +136,12 @@ main:has(#leftDivider[hidden]):has(#rightDivider[hidden]){grid-template-columns:
 #layerPickerCurrent,#layerPickerMenu button{display:flex;align-items:center;gap:8px}#layerPickerCurrent .layer-type-icon,#layerPickerMenu .layer-type-icon{flex:0 0 16px}
 
 #layerPickerMenu button{justify-content:flex-start;text-align:left}
+
+#addBackground{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px}.layer-type-icon.background{mask-image:url("vendor/material-icons/palette.svg")}.background-scale-link{display:flex;width:32px;height:30px;align-items:center;justify-content:center;padding:4px}
+
+.background-scale-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:end;margin:10px 0}.background-scale-row .field{min-width:0;margin:0}.background-scale-row input{min-width:0}.background-scale-row .background-scale-link{height:33px;padding:6px}
+.field.boolean-field{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;justify-content:start;gap:6px 8px}.field.boolean-field input[type=checkbox]{width:auto;margin:0}.field.boolean-field small{grid-column:1/-1}
+
+.compact-field-pair{display:flex;flex-wrap:wrap;align-items:start;gap:8px;margin:10px 0}.compact-field-pair>.field{display:grid;flex:1 1 96px;min-width:0;margin:0}.compact-field-pair input,.field .row input{min-width:0}.field .row input{flex:1}
+
+.position-fields{display:flex;flex-wrap:wrap;gap:8px}.position-axis{display:grid;gap:5px;flex:1 1 96px;min-width:0}.position-axis input{min-width:0}

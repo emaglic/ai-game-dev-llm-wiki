@@ -41,6 +41,34 @@ class SaveTests(unittest.TestCase):
         self.assertEqual(loaded, self.project['levels']['atrium'])
         self.assertNotEqual(result['revision'], revision)
 
+    def test_tile_layer_solid_optional_boolean_and_round_trip(self):
+        layer = self.project['levels']['atrium']['layers'][0]
+        layer.pop('solid', None)
+        self.assertEqual(server.validate_project(self.project), [])
+        for value in (True, False):
+            layer['solid'] = value
+            self.assertEqual(server.validate_project(self.project), [])
+        for value in ('false', 0, None):
+            layer['solid'] = value
+            self.assertTrue(server.validate_project(self.project))
+        layer['solid'] = False
+        self.store.save(self.project, self.store.revision())
+        loaded = json.loads((self.root / 'data/levels/atrium.json').read_text())
+        self.assertIs(loaded['layers'][0]['solid'], False)
+
+    def test_background_v3_roundtrip_and_validation(self):
+        level = self.project['levels']['atrium']
+        bg = {'id': 'bg', 'kind': 'background', 'visible': True, 'locked': False, 'opacity': .8, 'parallax': {'x': 0, 'y': .5}, 'objects': [{'id': 'bg-image', 'type': 'background-image', 'x': -20, 'y': 5, 'width': 400, 'height': 200, 'properties': {'asset': 'crate.svg', 'scaleX': 2, 'scaleY': 1, 'repeat': True, 'flipX': True}}]}
+        level['layers'].append(bg)
+        self.assertTrue(server.validate_project(self.project))
+        level['version'] = 3
+        self.assertEqual(server.validate_project(self.project), [])
+        bg['objects'][0]['properties']['scaleX'] = 0
+        self.assertTrue(server.validate_project(self.project))
+        bg['objects'][0]['properties']['scaleX'] = 2
+        self.store.save(self.project, self.store.revision())
+        self.assertEqual(json.loads((self.root / 'data/levels/atrium.json').read_text()), level)
+
     def test_stale_revision_blocks_overwrite(self):
         revision = self.store.revision()
         (self.root / 'data/settings.json').write_text(json.dumps({**self.project['settings'], 'external': True}))
