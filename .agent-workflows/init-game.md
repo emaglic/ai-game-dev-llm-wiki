@@ -121,6 +121,10 @@ During initialization and later project work, update the wiki only for durable c
 
 Do not dump transient debugging notes, command output, or temporary file paths into the wiki.
 
+## Menu, Loading, And Local Multiplayer Baseline
+
+Apply the shared [console-style menus and icons](../.agents/project-guidelines.md#console-style-menus-and-icons), [asset loading and lifetime](../.agents/project-guidelines.md#asset-loading-and-lifetime), and [local multiplayer/controller ownership](../.agents/project-guidelines.md#local-multiplayer-and-controller-ownership) guidelines from the initial design. These cover viewport-contained menus, locally shipped icons, full controller navigation, stage-aware loading, multiple gamepads, Player 1 shared-menu control, independent player choices, and the usual lobby flow. Include only features that fit the chosen game; template maintenance does not run this initialization workflow or populate the wiki.
+
 ## Responsive Game Viewport
 
 The game should be the primary page experience and should use as much of the browser viewport as is feasible. Avoid creating a small fixed-size canvas or game panel centered on an otherwise empty page unless the user explicitly asks for that style.
@@ -156,15 +160,15 @@ Choose mappings that fit the game, but use these defaults as a starting point:
 
 Gamepad support should usually be additive alongside keyboard, mouse, pointer, and touch controls as appropriate. Do not assume a gamepad is connected; handle connection, disconnection, and absent gamepads gracefully.
 
-If the game is touch-first, pointer-heavy, typing-heavy, drawing-based, menu-heavy, or otherwise a poor fit for gamepad controls, ask the human developer whether and how gamepad support should work instead of forcing a weak mapping.
+When gamepads suit the game, support controller-only navigation through gameplay and every menu, dialog, and transition. If the concept is a poor fit, gamepad support may be skipped for suitable keyboard/mouse or direct touch input; ask only when suitability is unclear. Menu-heavy and touch-first games are not automatically exceptions.
 
 Document the control scheme in the wiki and expose it in the game's controls/settings UI when useful.
 
 When gamepad-style controls make sense, include a virtual gamepad for touch devices by default. Enable it by default only on likely mobile/tablet touch devices, and disable it by default on desktop. Provide a settings menu toggle so the user can show or hide it.
 
-Choose the virtual gamepad layout based on the game using common mobile conventions: movement on the left thumb area, actions on the right thumb area, and pause/settings reachable without covering critical gameplay. Virtual controls must not hide important HUD, menus, or gameplay information.
+Start virtual controls from a physical controller layout: a left virtual analog stick when suitable and right circular action buttons in an SNES/Xbox-style diamond when useful. Adapt the layout and button count to the game and touch ergonomics; this is a strong recommendation, not a hard rule. Keep pause/settings reachable and important HUD, menus, and gameplay unobscured.
 
-If the game is a poor fit for physical gamepad support, apply the same caution to the virtual gamepad. Ask the human developer whether and how virtual controls should work instead of forcing them.
+When gamepad controls do not fit the game, virtual gamepads may also be skipped in favor of appropriate direct touch or other input; ask only when the approach is unclear.
 
 ## Settings Menu
 

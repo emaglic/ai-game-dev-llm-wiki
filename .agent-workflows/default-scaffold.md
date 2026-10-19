@@ -71,6 +71,14 @@ Use manifest/settings/catalog version 1 and level version 2. Store tile position
 
 When a third-party browser library is selected, prefer downloading or vendoring a browser-compatible copy into `game/vendor/` or `game/lib/` instead of linking to a CDN. Record the library name, version, source URL, and license/provenance notes in `wiki/assets.md` or `wiki/architecture.md`.
 
+## UI, Multiplayer, And Loading Defaults
+
+Follow the shared [console-style menu and icon baseline](../.agents/project-guidelines.md#console-style-menus-and-icons): keep menus in the viewport using tabs/pages/submenus, make every applicable flow controller-navigable, and ship a suitable icon library and license locally. Choose icon-only, text-only, or combined controls by context, with accessible names for icon-only buttons.
+
+For local multiplayer, follow [controller ownership and lobby guidance](../.agents/project-guidelines.md#local-multiplayer-and-controller-ownership): support a gamepad per player, let Player 1 control shared menus and their own choices, and let everyone independently control their own choices. Usually provide a lobby for joining/leaving, selections, and readiness, unless another flow fits better. Handle controller assignment and disconnection recovery.
+
+Plan [asset loading and lifetime](../.agents/project-guidelines.md#asset-loading-and-lifetime) from the starter: load what is needed soon, use brief loading transitions where useful, and release unused stage assets while retaining shared resources. Do not require a loading screen or whole-game preload for every game.
+
 ## Responsive Viewport Defaults
 
 Design the initial game shell so the game is the primary page experience and uses as much of the available browser viewport as feasible.
@@ -91,13 +99,13 @@ For most games, include a browser Gamepad API input path in addition to keyboard
 
 Use an Xbox-style controller as the default layout model. Typical defaults are left stick or D-pad for movement/navigation, A for confirm/jump/interact/primary action, B for cancel/back/secondary action, X/Y for extra actions, shoulder buttons/triggers for modifiers or genre-specific actions, and Start/Menu for pause.
 
-If the game concept is a poor fit for gamepad controls, ask the human developer whether and how gamepad support should work before adding it.
+Make gameplay and all menus usable with only a gamepad when supported. If the concept is a poor fit, gamepad support may be skipped for appropriate keyboard/mouse or direct touch input; ask only when suitability is unclear.
 
 Document the chosen control scheme in the wiki and, when useful, in the game's controls/settings UI.
 
 When gamepad-style controls make sense, include a virtual gamepad for touch devices. It should be enabled by default only on likely mobile/tablet touch devices, disabled by default on desktop, and controlled by a settings menu toggle.
 
-Use common mobile game conventions for the default virtual layout: movement on the left thumb area, action buttons on the right thumb area, and pause/settings reachable without covering important gameplay or HUD information.
+Strongly prefer a familiar physical controller layout as the virtual starting point: a left virtual analog stick when appropriate and circular right action buttons in an SNES/Xbox-style diamond when useful. Adapt button count, spacing, and placement to gameplay and touch ergonomics. Keep pause/settings reachable without obscuring important gameplay or HUD information.
 
 ## Settings Menu Defaults
 

@@ -101,6 +101,8 @@ Agents should avoid tiny fixed-size game windows unless you explicitly ask for t
 
 Use 16:9 as the default target aspect ratio when a fixed gameplay aspect is useful. It is not a hard rule: portrait games may use 9:16, square games may use 1:1, and other formats can be chosen based on the game. The game should preserve its aspect ratio and use letterboxing or pillarboxing when needed instead of stretching, squashing, or cropping.
 
+Menus should feel like console-game menus: fit within the viewport and use tabs, pages, or submenus instead of long scrolling lists where practical, while preserving readability on small screens and with larger text.
+
 ## Iframe Compatibility
 
 Games should be iframe-friendly when practical, so they can later be embedded on a personal site, itch.io, or another host.
@@ -115,11 +117,23 @@ Most games built from this template should include gamepad support by default, u
 
 Agents can choose the exact mapping that fits the game. Common defaults are left stick or D-pad for movement/navigation, A for confirm/jump/interact, B for cancel/back/secondary action, X/Y for extra actions, shoulder buttons/triggers for modifiers or genre-specific actions, and Start/Menu for pause.
 
-Gamepad controls should usually be additive alongside keyboard, mouse, pointer, and touch controls. If the game concept is a poor fit for gamepad controls, the agent should ask whether and how you want gamepad support handled.
+When gamepads fit the game, the complete experience should work using only a controller, including menus, settings, dialogs, pause, and results screens, with visible focus and consistent confirm/back actions. Keyboard, mouse, and touch remain available as appropriate. Games that do not suit gamepads may use suitable keyboard/mouse or direct touch input instead; agents should ask only when suitability is unclear.
 
 When gamepad-style controls make sense, agents should also include a virtual gamepad for touch devices. It should be enabled by default only on likely mobile/tablet devices, disabled by default on desktop, and adjustable from the game's settings menu.
 
-Virtual controls should follow common mobile game conventions: movement on the left side, actions on the right side, and pause/settings reachable without covering important gameplay or HUD information.
+Virtual controls should start from a familiar physical gamepad layout where useful: a virtual analog stick on the left and circular action buttons on the right, arranged in an SNES/Xbox-style diamond when appropriate. This is a strong suggestion, adapted to the game and comfortable touch use. Keep pause/settings reachable and important gameplay/HUD information visible.
+
+## Local Multiplayer
+
+For players sharing one device, support a gamepad per player when gamepad controls fit. Player 1 controls shared menus and their own choices; each other player controls their own character, team, and other choices independently using their assigned gamepad. Show clear ownership/focus and handle joining, leaving, controller disconnections, and Player 1 reassignment gracefully.
+
+Most local multiplayer games should have a lobby for joining/leaving, required selections, and readiness before Player 1 starts the match. Games that work better without a lobby can use a more suitable flow.
+
+## Icons And Asset Loading
+
+Include a suitable icon library by default, such as Google's Material Icons, shipped locally with its license rather than loaded from a CDN. Agents should choose icons, text, or both to suit each control, and give icon-only controls accessible names.
+
+Consider asset loading from the start. Preload what is needed for the initial screen or upcoming stage, use brief loading screens/transitions when useful, and release unused previous-stage assets while retaining shared resources. Small games may need only a simple initial load; avoid unnecessary loading screens and artificial delays.
 
 ## Settings Menu
 
@@ -158,7 +172,9 @@ This keeps the original source assets separate from the game's runtime assets.
 
 ## Wiki Expectations
 
-The wiki should stay concise and durable. Good wiki material includes:
+Template maintenance does not initialize, read, or populate the game wiki or create game activity logs. Initialize the wiki when starting an actual game project.
+
+During game development, the wiki should stay concise and durable. Good wiki material includes:
 
 - Game concept and scope.
 - Core mechanics and controls.

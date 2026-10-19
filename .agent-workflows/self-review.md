@@ -36,11 +36,18 @@ Evaluate whether the work:
 - Keeps gameplay, menus, HUD, settings, and controls visible, reachable, and usable.
 - Includes a settings menu by default for playable games.
 - Provides fullscreen behavior where supported and handles limitations gracefully.
+- Keeps menus within the viewport using tabs/pages/submenus instead of long scrolling lists where practical, while preserving readability and access at small sizes or larger text.
+- Ships a suitable icon library locally with its license, without remote font/style dependencies, and uses icons/text appropriately with accessible names for icon-only controls.
+- Plans asset preloading and lifetime to suit the game's scale: required assets ready before use, useful loading feedback/recovery, stage-aware loading and safe release of unused resources without artificial delays.
 - Includes physical gamepad support by default when the game concept fits it.
-- Includes mobile/tablet virtual gamepad support when gamepad-style controls fit, with a settings toggle.
+- Makes the full game and every menu/dialog usable with only a gamepad, with visible focus and consistent confirm/back behavior.
+- Supports multiple gamepads for local multiplayer when applicable, with explicit player assignments and joining/leaving/disconnection recovery.
+- Gives Player 1 access to shared menus and personal choices while other players independently control their own choices, with clear per-player focus and no input leaking between players or shared controls.
+- Usually provides a local multiplayer lobby for joining/leaving, required selections, and readiness, while allowing a more suitable flow for games that do not need one.
+- Includes mobile/tablet virtual gamepad support when gamepad-style controls fit, with a settings toggle and a physical-controller-inspired layout adapted for touch (left stick and right circular/diamond buttons where appropriate).
 - Avoids forcing gamepad or virtual controls onto game concepts where they do not make sense.
 - Remains iframe-friendly when practical without weakening the standalone native-ish experience.
-- Updates durable wiki context for meaningful design, architecture, asset, control, or workflow decisions.
+- Updates durable wiki context for meaningful game design, architecture, asset, control, or workflow decisions during actual game development; template-only maintenance does not read/populate the wiki or create game activity logs.
 - Respects concurrency rules, including activity logs, reread-before-write behavior, and game write locks.
 - Leaves no stale active lock files, preview-server records, or activity logs that do not belong in the template or current project state.
 

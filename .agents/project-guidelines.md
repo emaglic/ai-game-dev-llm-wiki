@@ -66,6 +66,24 @@ Include a fullscreen option in playable game builds unless the user asks otherwi
 
 Playable games should include an in-game settings menu by default. The settings entry point should be visible but unobtrusive, preferably a gear icon button with an accessible label/title. By default, include fullscreen and virtual gamepad controls in this menu when those features apply.
 
+## Console-Style Menus And Icons
+
+Design game UI to feel like a console game. Keep menus within the available viewport; prefer tabs, pages, categories, and submenus over long scrolling lists. Preserve readability and access on small screens and with larger text rather than shrinking controls to force a fit. Where scrolling is necessary, keep it contained and navigable with the supported inputs.
+
+For games that support gamepads, make the entire experience usable with only a controller: main menus, settings, dialogs, pause screens, lobbies, gameplay, and results/retry flows. Provide visible focus, predictable navigation, consistent confirm/back actions, and a way to reach every applicable control without mouse hover, pointer clicks, or keyboard input. Restore sensible focus when opening/closing menus or switching tabs. Verify complete controller-only flows, not just movement during gameplay.
+
+Include a suitable icon library by default, such as Google's Material Icons, so menus and HUD controls can use consistent icons. Download and ship the required icons/fonts/styles locally under `game/`, including their license; avoid third-party CDN dependencies or stylesheets that fetch remote fonts. Use an appropriate subset when practical. Record version, source, and license/provenance in the initialized game's wiki.
+
+Choose icon-only, text-only, or icon-plus-text controls using UI/UX judgment and the human developer's direction. Use recognizable icons, give icon-only controls accessible names, and make their meaning discoverable with supported inputs rather than relying only on mouse-hover tooltips.
+
+## Asset Loading And Lifetime
+
+Plan asset loading and preloading from the start. Consider download size, decoding/upload time, memory, and transitions; preload assets needed for the initial screen and imminent gameplay rather than automatically loading the entire game up front.
+
+When useful, show a brief loading screen or transition while preparing the next stage's assets. Show honest progress or an activity indicator, handle failures with useful feedback and recovery, and begin play only once required assets are ready. Release assets from previous stages when no longer needed, retaining shared or soon-needed resources and respecting engine/library ownership so active assets are not disposed accidentally.
+
+Choose the strategy for the game's scale: small games may need only a simple initial load and no separate loading screen. Avoid artificial delays. Verify stage transitions, restarts, and load failures as applicable, and watch for repeated asset loads or growing memory usage.
+
 ## Responsive Game Viewport
 
 The game should be the primary page experience and should use as much of the browser viewport as is feasible. Avoid presenting the game as a small fixed-size canvas or panel centered on an otherwise empty page unless the user explicitly asks for that style.
@@ -101,17 +119,27 @@ Choose mappings that fit the genre, but use these defaults as a starting point:
 
 Gamepad support should usually be additive alongside keyboard, mouse, pointer, and touch controls as appropriate. Do not assume a gamepad is connected; handle connection, disconnection, and absent gamepads gracefully.
 
-If the game is touch-first, pointer-heavy, typing-heavy, drawing-based, menu-heavy, or otherwise a poor fit for gamepad controls, ask the human developer whether and how gamepad support should work instead of forcing a weak mapping.
+If the game concept is genuinely a poor fit for gamepads, such as a typing or drawing game, gamepad support may be skipped in favor of keyboard/mouse or direct touch as appropriate. Follow the human developer's direction and ask only when suitability is unclear. Being menu-heavy or touch-first alone does not make a game unsuitable for gamepads.
 
 Document the control scheme in the wiki and expose it in the game's controls/settings UI when useful.
 
 When gamepad-style controls make sense, include a virtual gamepad for touch devices by default. It should be enabled by default only on likely mobile/tablet touch devices, and disabled by default on desktop. Provide a settings menu toggle so the user can show or hide it.
 
-Choose the virtual gamepad layout based on the game using common mobile conventions: movement on the left thumb area, actions on the right thumb area, and pause/settings reachable without covering critical gameplay. Virtual controls must not hide important HUD, menus, or gameplay information.
+Use a physical gamepad layout as the strong starting recommendation for virtual controls: movement in the left thumb area, preferably a virtual analog stick when it fits, and circular action buttons in the right thumb area, arranged in an SNES/Xbox-style diamond when the action count warrants it. Use a D-pad or fewer buttons when better suited to the game; do not add unused controls just to reproduce a controller. Adapt spacing, size, and placement for comfortable touch use and simultaneous movement/actions. Keep pause/settings reachable and avoid covering important HUD, menus, or gameplay information. This is a starting point for developer refinement, not a rigid layout rule.
 
-If the game is a poor fit for physical gamepad support, apply the same caution to the virtual gamepad. Ask the human developer whether and how virtual controls should work instead of forcing them.
+If the game is a poor fit for physical gamepad support, virtual gamepad controls may also be skipped in favor of suitable direct touch or other input. Ask the human developer only when the appropriate approach is unclear.
 
 Fullscreen should be available from the settings menu where the browser supports it. Handle unsupported or restricted fullscreen behavior gracefully, especially on mobile browsers.
+
+## Local Multiplayer And Controller Ownership
+
+For multiple players on the same device, support multiple physical gamepads when gamepad controls fit the game, so each player can use their own controller. Track controller-to-player assignments explicitly rather than sending every controller to Player 1. Handle joining, leaving, disconnection, and reconnection gracefully; preserve other players' assignments and choices and make reassignment understandable.
+
+Assign a Player 1 to navigate main/shared menus and shared options, including starting the match. Each player controls their own choices, such as character, team, and ready status, using their assigned gamepad. Player 1 controls both their own choices and the shared menu options. Keep player-specific focus and input separate so one player's navigation does not change another player's selection. Make ownership and focus clear and avoid a single press activating both a personal choice and a shared action. Provide a clear recovery or reassignment flow if Player 1 leaves or disconnects.
+
+Use a lobby as the usual starting point for local multiplayer games. Let players join/leave and complete the choices the game requires, such as character, team, loadout, or ready status, before starting. Display player slots, controller assignments, selections, and readiness clearly; keep shared controls with Player 1 while allowing independent player choices. A lobby is a recommendation, not a requirement for games that work better with immediate play or another joining flow.
+
+Verify with multiple controllers where available: independent joining and selections, Player 1's access to both personal and shared controls, match start, and leave/disconnect/reconnect recovery. State any hardware verification limitations.
 
 ## Local Preview Server
 
