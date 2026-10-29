@@ -145,3 +145,5 @@ main:has(#leftDivider[hidden]):has(#rightDivider[hidden]){grid-template-columns:
 .compact-field-pair{display:flex;flex-wrap:wrap;align-items:start;gap:8px;margin:10px 0}.compact-field-pair>.field{display:grid;flex:1 1 96px;min-width:0;margin:0}.compact-field-pair input,.field .row input{min-width:0}.field .row input{flex:1}
 
 .position-fields{display:flex;flex-wrap:wrap;gap:8px}.position-axis{display:grid;gap:5px;flex:1 1 96px;min-width:0}.position-axis input{min-width:0}
+
+.layer-header-state[data-state=solo][aria-pressed=true]{background:#356877;box-shadow:inset 0 0 0 1px #64dec6}

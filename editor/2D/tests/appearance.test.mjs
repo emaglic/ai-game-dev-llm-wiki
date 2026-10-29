@@ -22,3 +22,25 @@ test('a grid rectangle erases its interior cells without touching neighboring ro
   for(let y=0;y<128;y+=32)for(let x=0;x<128;x+=32)if(intersectsRectangle({x,y,width:32,height:32},{},r))hits.push([x,y]);
   assert.deepEqual(hits,[[32,32],[64,32],[32,64],[64,64]]);
 });
+
+test('invisible types get stable broad colors, accurate shapes and editor-only feedback',async()=>{
+  const {editorTypeColor}=await import('../src/appearance.mjs');
+  const colors=['trigger','boundary','spawn','collision','zone','portal'].map(id=>editorTypeColor({id}));
+  assert.ok(new Set(colors).size>=5);assert.equal(editorTypeColor({id:'trigger'}),colors[0]);assert.equal(editorTypeColor({id:'trigger',color:'#123456'}),'#123456');
+  for(const shape of ['rectangle','ellipse','polygon']){
+    const calls=[],ctx=new Proxy({globalAlpha:1},{get:(t,k)=>k in t?t[k]:(...a)=>calls.push([k,...a]),set:(t,k,v)=>(calls.push(['set',k,v]),t[k]=v,true)});
+    const type={id:'boundary',visual:{editorOnly:true},collision:{shape,points:[{x:0,y:0},{x:1,y:0},{x:0,y:1}]}};
+    drawElement(ctx,object,type,new Map(),{editor:false});assert.equal(calls.length,0);
+    drawElement(ctx,object,type,new Map(),{selected:true,labels:false});assert.ok(calls.some(c=>c[0]==='fill'));assert.ok(calls.some(c=>c[0]==='stroke'));assert.ok(calls.some(c=>c[0]==='fillText'));assert.ok(calls.some(c=>c[0]===(shape==='rectangle'?'rect':shape==='ellipse'?'ellipse':'lineTo')));assert.ok(calls.some(c=>c[0]==='set'&&c[1]==='globalAlpha'&&c[2]<1));
+  }
+});
+
+test('invisible region fill, border and label share a chromatic type color',async()=>{
+  const {editorTypeColor}=await import('../src/appearance.mjs');
+  for(const color of ['#ffffff','#000000','#808080','#f0f1f2','#101112'])assert.equal(editorTypeColor({id:'region',color}),editorTypeColor({id:'region'}));
+  for(const selected of [false,true]){
+    const calls=[],ctx={globalAlpha:1,save(){this.alpha=this.globalAlpha;},restore(){this.globalAlpha=this.alpha;},beginPath(){},rect(){},setLineDash(){},fill(){calls.push(['fill',this.fillStyle,this.globalAlpha]);},stroke(){calls.push(['stroke',this.strokeStyle,this.globalAlpha]);},fillText(){calls.push(['label',this.fillStyle,this.globalAlpha]);}};
+    drawElement(ctx,object,{id:'region',color:'#e050a0',visual:{editorOnly:true}},new Map(),{selected});
+    assert.deepEqual(calls,[['fill','#e050a0',.5],['stroke','#e050a0',1],['label','#e050a0',1]]);
+  }
+});

@@ -2,11 +2,11 @@ import {drawBackground,backgroundOffset,shiftedBackground} from './backgrounds.m
 import {drawElement,frameError} from './appearance.mjs';
 import {objects} from './model.mjs';
 export function cameraViewport(settings,viewport){const c=settings.camera||{x:0,y:0},z=settings.cameraZoom??1;return{x:c.x-viewport.width/z/2,y:c.y-viewport.height/z/2,width:viewport.width/z,height:viewport.height/z};}
-export function drawScene(ctx,project,level,images,{grid=false,gridSize={x:level.grid,y:level.grid},gridBounds=null,gridZoom=1,gridColor="#ffffff",gridOpacity=.13,selected=null,selectedTile=null,hiddenTile=null,overlays=true,overlayOptions={},cameraActive=false,referenceActive=false,hoveredLayer=null,backgroundCamera=null}={}){
+export function drawScene(ctx,project,level,images,{grid=false,gridSize={x:level.grid,y:level.grid},gridBounds=null,gridZoom=1,gridColor="#ffffff",gridOpacity=.13,selected=null,selectedTile=null,hiddenTile=null,overlays=true,overlayOptions={},cameraActive=false,referenceActive=false,hoveredLayer=null,backgroundCamera=null,layerVisible=l=>l.visible}={}){
   const types=new Map(project.catalog.elements.map(e=>[e.id,e]));
   ctx.fillStyle=level.settings.background||'#14202c';ctx.fillRect(0,0,level.width,level.height);
   const shape=(o,t)=>drawElement(ctx,o,t,images,{editor:overlays,selected:o.id===selected,labels:overlayOptions.labels!==false});
-  for(const l of level.layers){if(!l.visible)continue;ctx.save();ctx.globalAlpha=l.opacity*(hoveredLayer&&hoveredLayer!==l.id ? .1 : 1);
+  for(const l of level.layers){if(!layerVisible(l))continue;ctx.save();ctx.globalAlpha=l.opacity*(hoveredLayer&&hoveredLayer!==l.id ? .1 : 1);
     if(l.kind==='background'){const c=backgroundCamera||cameraViewport({...level.settings,camera:level.settings.camera??project.catalog.levelProperties.camera?.default,cameraZoom:level.settings.cameraZoom??project.catalog.levelProperties.cameraZoom?.default??1},project.settings.viewport);const offset=backgroundOffset(l,c);for(const o of l.objects)drawBackground(ctx,shiftedBackground(o,offset),images,{editor:overlays,selected:o.id===selected});}
     else if(l.kind==='tile')for(const t of l.tiles){if(hiddenTile?.layer===l.id&&hiddenTile.x===t.x&&hiddenTile.y===t.y)continue;shape(t,types.get(t.type));if(selectedTile?.layer===l.id&&selectedTile.x===t.x&&selectedTile.y===t.y){ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(t.x,t.y,t.width,t.height);}}
     else for(const o of l.objects){const t=types.get(o.type);shape(o,t);

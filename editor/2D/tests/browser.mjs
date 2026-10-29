@@ -40,8 +40,37 @@ try{
   await click('#shortcutHelp');assert.equal(await evaluate("document.getElementById('helpDialog').open"),true);assert.match(await evaluate("document.getElementById('helpContent').textContent"),/Right-click/);await click('#closeHelp');
   assert.equal(await evaluate("document.getElementById('save').closest('#projectMenu')!==null"),true);
   console.log('Menus passed: exclusive opening, keyboard navigation, Escape, manifest cancellation and readable help.');
-  assert.equal(await evaluate("document.querySelectorAll('.layer-header-state[data-state]').length"),6);assert.equal(await evaluate("document.querySelectorAll('.layer-controls input[type=checkbox]:not([data-layer-solid])').length"),0);
+  assert.equal(await evaluate("document.querySelectorAll('.layer-header-state[data-state]').length"),9);assert.equal(await evaluate("document.querySelectorAll('.layer-controls input[type=checkbox]:not([data-layer-solid])').length"),0);
   await click('#layers .layer-card[data-layer=ground] [data-state=visible]');assert.equal(await evaluate("document.querySelector('#layers .layer-card[data-layer=ground]').open"),false);assert.equal(await evaluate("document.querySelector('#layers .layer-card[data-layer=ground] [data-state=visible]').getAttribute('aria-pressed')"),'false');await click('#layers .layer-card[data-layer=ground] [data-state=visible]');await click('#undo');await click('#undo');
+  // Real canvas pixels verify the shared fallback, rather than only draw-call mocks.
+  assert.deepEqual(await evaluate(`(async()=>{
+    const {drawElement}=await import('./src/appearance.mjs');
+    const c=document.createElement('canvas');c.width=100;c.height=50;const x=c.getContext('2d');
+    const o={x:0,y:0,width:40,height:40,properties:{}};
+    const a={id:'trigger',visual:{editorOnly:true}},b={id:'boundary',visual:{editorOnly:true}};
+    drawElement(x,o,a,new Map(),{labels:false});drawElement(x,{...o,x:50},b,new Map(),{labels:false});
+    const first=[...x.getImageData(20,20,1,1).data],second=[...x.getImageData(70,20,1,1).data];
+    const distinct=first.slice(0,3).join()!==second.slice(0,3).join(),translucent=first[3]>0&&first[3]<255;
+    x.clearRect(0,0,100,50);drawElement(x,o,a,new Map(),{editor:false});
+    return [distinct,translucent,x.getImageData(20,20,1,1).data[3]===0];
+  })()`),[true,true,true]);
+  // Solo is a view change, including for a layer whose authored eye is off.
+  await click('#layers [data-layer=decoration] [data-state=visible]');
+  const soloBefore=await evaluate("document.getElementById('dirty').textContent");
+  await click('#layers [data-layer=decoration] [data-state=solo]');
+  assert.equal(await evaluate("document.getElementById('dirty').textContent"),soloBefore);
+  assert.equal(await evaluate("document.querySelector('#layers [data-layer=decoration] [data-state=solo]').getAttribute('aria-pressed')"),'true');
+  await click('#layers [data-layer=actors] [data-state=solo]');
+  assert.equal(await evaluate("document.querySelectorAll('[data-state=solo][aria-pressed=true]').length"),1);
+  await change('#levels','garden');
+  assert.equal(await evaluate("document.querySelectorAll('[data-state=solo][aria-pressed=true]').length"),0);
+  await change('#levels','atrium');
+  await click('#layers [data-layer=actors] [data-state=solo]');
+  await click('#layers [data-layer=actors] [data-state=solo]');
+  await click('#layers [data-layer=decoration] [data-state=solo]');
+  await click('#layers [data-layer=decoration] [data-state=visible]');
+  assert.equal(await evaluate("document.querySelectorAll('[data-state=solo][aria-pressed=true]').length"),0);
+  await click('#undo');await click('#undo');
   assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('#layers .layer-card'),e=>e.dataset.layer)"),['actors','decoration','ground']);
   assert.equal(await evaluate("document.querySelector('[aria-label=\"Raise actors\"]').disabled"),true);assert.equal(await evaluate("document.querySelector('[aria-label=\"Lower ground\"]').disabled"),true);
   await click('[aria-label="Raise ground"]');assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('#layers .layer-card'),e=>e.dataset.layer)"),['actors','ground','decoration']);await click('#undo');

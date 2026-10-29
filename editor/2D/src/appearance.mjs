@@ -48,8 +48,19 @@ export function intersectsRectangle(o,type,r){
   const points=type?.collision?.shape==='polygon'?type.collision.points:[{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:1}];
   return points.some(p=>inside({x:o.x+p.x*o.width,y:o.y+p.y*o.height}));
 }
+// Stable type identity, independent of catalog order, render count, or level.
+export function editorTypeColor(type){
+  // Catalog colors are #rrggbb. Neutral/near-neutral colors lose region identity.
+  if(/^#[0-9a-f]{6}$/i.test(type?.color||'')){
+    const rgb=type.color.slice(1).match(/../g).map(v=>parseInt(v,16));
+    if(Math.max(...rgb)-Math.min(...rgb)>=32)return type.color;
+  }
+  let hash=2166136261;for(const char of type?.id||'unknown')hash=Math.imul(hash^char.charCodeAt(0),16777619)>>>0;
+  return `hsl(${hash%360} 72% 64%)`;
+}
 export function drawElement(ctx,o,type,images,{editor=true,selected=false,labels=true}={}){
   if(type?.visual?.editorOnly&&!editor)return;
+  const region=type?.visual?.editorOnly,color=region?editorTypeColor(type):o.properties?.tint||type?.color||'#ff00ff';
   const asset=o.properties?.sprite||type?.visual?.asset||type?.asset,image=images.get(asset),frame=type?.visual?.frame;
   const validImage=image&&!frameError(type||{},image);
   if(validImage){
@@ -58,10 +69,11 @@ export function drawElement(ctx,o,type,images,{editor=true,selected=false,labels
     let w=box.width,h=box.height;if(type?.visual?.fit!=='stretch'){const scale=Math.min(w/f.width,h/f.height);w=f.width*scale;h=f.height*scale;}
     ctx.imageSmoothingEnabled=false;ctx.drawImage(image,f.x,f.y,f.width,f.height,box.x+(box.width-w)/2,box.y+(box.height-h)/2,w,h);
   }else{
-    ctx.save();collisionPath(ctx,o,type);ctx.fillStyle=o.properties?.tint||type?.color||'#ff00ff';if(type?.visual?.editorOnly)ctx.globalAlpha*=.2;ctx.fill('evenodd');ctx.restore();
+    ctx.save();collisionPath(ctx,o,type);ctx.fillStyle=color;if(region)ctx.globalAlpha*=.5;ctx.fill('evenodd');ctx.restore();
   }
-  if(editor&&(!validImage||selected)){
-    collisionPath(ctx,o,type);ctx.strokeStyle=selected?'#fff':type?.color||'#92b4d0';ctx.lineWidth=selected?2:1;ctx.setLineDash(type?.visual?.editorOnly?[5,3]:[]);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='#fff';ctx.font='11px system-ui';if(labels||selected)ctx.fillText(type?.label||o.type,o.x+3,o.y+13);
+  if(editor&&region&&validImage){ctx.save();collisionPath(ctx,o,type);ctx.fillStyle=color;ctx.globalAlpha*=.5;ctx.fill('evenodd');ctx.restore();}
+  if(editor&&(!validImage||selected||region)){
+    collisionPath(ctx,o,type);ctx.strokeStyle=region?color:selected?'#fff':type?.color||'#92b4d0';ctx.lineWidth=selected?2:1;ctx.setLineDash(type?.visual?.editorOnly?[5,3]:[]);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=region?color:'#fff';ctx.font='11px system-ui';if(labels||selected)ctx.fillText(type?.label||o.type,o.x+3,o.y+13);
   }
 }
