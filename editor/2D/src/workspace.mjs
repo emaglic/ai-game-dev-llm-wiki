@@ -4,7 +4,7 @@ const key='editor2D.workspace';
 export function setupWorkspace(draw){
   const $=id=>document.getElementById(id),main=document.querySelector('main');
   let stored={};try{stored=JSON.parse(localStorage.getItem(key)||'{}')||{};}catch{}
-  const state={left:290,right:290,leftHidden:false,rightHidden:false,labels:true,ranges:true,references:true,camera:true,grid:true,gridLinked:false,gridColor:"#ffffff",gridOpacity:13,toolbarHistory:true,toolbarTools:true,toolbarGrid:true,toolbarLayers:true,toolbarPalette:true,toolbarLevel:true,layerHoverPreview:true};
+  const state={left:290,right:290,leftHidden:false,rightHidden:false,labels:true,ranges:true,references:true,camera:true,grid:true,gridLinked:false,gridColor:"#ffffff",gridOpacity:13,toolbarHistory:true,toolbarTools:true,toolbarGrid:true,toolbarLayers:true,toolbarPalette:true,toolbarLevel:true,layerHoverPreview:true,autoSelectLayer:false};
   for(const name of Object.keys(state))if(typeof stored[name]===typeof state[name]&&(typeof stored[name]!=='number'||Number.isFinite(stored[name])))state[name]=stored[name];
   if(!/^#[0-9a-f]{6}$/i.test(state.gridColor))state.gridColor='#ffffff';state.gridOpacity=Math.max(0,Math.min(100,state.gridOpacity));
   const save=()=>{try{localStorage.setItem(key,JSON.stringify(state));}catch{}};
@@ -38,6 +38,25 @@ export function setupWorkspace(draw){
   for(const [name,id,toggle]of toolbarGroups)$(toggle).onchange=e=>{state['toolbar'+name]=e.target.checked;if(!e.target.checked)for(const b of $(id).querySelectorAll('[aria-expanded=true]')){const popup=$(b.getAttribute('aria-controls'));if(popup)popup.hidden=true;b.setAttribute('aria-expanded','false');}updateToolbar();save();};
   $('resetToolbar').onclick=()=>{for(const [name]of toolbarGroups)state['toolbar'+name]=true;updateToolbar();save();};updateToolbar();
   $('layerHoverPreview').checked=state.layerHoverPreview;$('layerHoverPreview').onchange=e=>{state.layerHoverPreview=e.target.checked;save();draw();};
+  $('autoSelectLayer').checked=state.autoSelectLayer;
+  $('autoSelectLayer').onchange=e=>{state.autoSelectLayer=e.target.checked;save();draw();};
+  for(const [group,buttonId,menuId,inputId] of [
+    ['selectOptions','selectOptionsButton','selectOptionsMenu','autoSelectLayer'],
+    ['cameraOptions','cameraOptionsButton','cameraOptionsMenu','showCameraElement']
+  ]){
+    const menu=$(menuId),button=$(buttonId);
+    const close=()=>{menu.hidden=true;button.setAttribute('aria-expanded','false');};
+    const open=()=>{menu.hidden=false;button.setAttribute('aria-expanded','true');};
+    button.onclick=()=>menu.hidden?open():close();
+    button.onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();open();$(inputId).focus();}};
+    menu.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();button.focus();}};
+    document.addEventListener('pointerdown',e=>{if(!$(group).contains(e.target))close();});
+    document.addEventListener('focusin',e=>{if(!$(group).contains(e.target))close();});
+  }
+  $('showCameraElement').checked=state.camera;
+  $('showCameraElement').onchange=e=>{$('cameraOverlay').checked=e.target.checked;$('cameraOverlay').dispatchEvent(new Event('change'));};
+  const cameraChange=$('cameraOverlay').onchange;
+  $('cameraOverlay').onchange=e=>{$('showCameraElement').checked=e.target.checked;cameraChange(e);};
   $('viewGrid').checked=state.grid;
   $('viewGrid').onchange=e=>{$('grid').checked=e.target.checked;$('grid').dispatchEvent(new Event('change'));};
   const gridChange=$('grid').onchange;$('grid').onchange=e=>{gridChange(e);$('viewGrid').checked=state.grid;};

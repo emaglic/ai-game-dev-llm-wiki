@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {LayerView} from '../src/layer-view.mjs';
+import {LayerView,topmostElement} from '../src/layer-view.mjs';
 import {drawScene} from '../src/render.mjs';
 const fixture=()=>({id:'room',layers:[{id:'a',visible:true},{id:'b',visible:false},{id:'c',visible:true}]});
 test('Solo hidden layer, switch isolation and restore mixed visibility without modifying data',()=>{
@@ -25,4 +25,17 @@ test('effective visibility controls scene drawing; default runtime still uses au
   const fills=[],ctx=new Proxy({globalAlpha:1},{get:(t,k)=>k in t?t[k]:(...args)=>{if(k==='fill')fills.push(t.fillStyle);},set:(t,k,v)=>(t[k]=v,true)});
   const view=new LayerView();view.toggle(level,'b');drawScene(ctx,project,level,new Map(),{overlays:false,layerVisible:l=>view.visible(l)});assert.deepEqual(fills,['b']);
   fills.length=0;drawScene(ctx,project,level,new Map(),{overlays:false});assert.deepEqual(fills,['a','c']);
+});
+
+test('auto selection follows stacking, skips locked/hidden layers and inverse-transforms backgrounds',()=>{
+  const box=(id,x=0)=>({id,type:'box',x,y:0,width:20,height:20});
+  const level={layers:[{id:'tiles',kind:'tile',visible:true,tiles:[box('tile')]},{id:'objects',kind:'object',visible:true,objects:[box('back'),box('front')]},{id:'bg',kind:'background',visible:true,objects:[box('background',100)]}]};
+  const types=new Map(),point={x:10,y:10},pick=options=>topmostElement(level,point,types,options);
+  assert.equal(pick().element.id,'front');
+  assert.equal(pick({pointForLayer:(p,l)=>l.kind==='background'?{x:p.x+100,y:p.y}:p}).element.id,'background');
+  level.layers[1].locked=true;assert.equal(pick().layer.id,'tiles');
+  level.layers[1].locked=false;level.layers[1].visible=false;assert.equal(pick().layer.id,'tiles');
+  assert.equal(pick({visible:l=>l.id==='objects'}).element.id,'front');
+  assert.equal(topmostElement(level,{x:50,y:50},types),null);
+  level.layers[0].locked=true;assert.equal(pick(),null);
 });

@@ -30,7 +30,7 @@ try{
   assert.ok(await evaluate("document.querySelector('input[aria-label=\"Game camera zoom\"]')"));
   async function click(selector){await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);}
   async function change(selector,value){if(selector==='#layerPickerSelect'){await click('#layerPickerMenu [data-layer='+value+']');return;}if(selector==='#tool'&&value==='camera'){await click('#selectCameraBounds');return;}if(selector==='#tool'){await click(`#tools [data-tool="${value}"]`);return;}await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));})()`);}
-  assert.equal(await evaluate("document.getElementById('tool')"),null);assert.equal(await evaluate("document.querySelectorAll('#tools button').length"),3);await click('#tools [data-tool="paint"]');assert.equal(await evaluate("document.querySelectorAll('#tools [aria-pressed=true]').length"),1);await evaluate("document.querySelector('#tools [data-tool=paint]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))");assert.equal(await evaluate("document.querySelector('#tools [data-tool=rectangle]').getAttribute('aria-pressed')"),'true');await click('#tools [data-tool="select"]');
+  assert.equal(await evaluate("document.getElementById('tool')"),null);assert.equal(await evaluate("document.querySelectorAll('#tools [data-tool]').length"),3);await click('#tools [data-tool="paint"]');assert.equal(await evaluate("document.querySelectorAll('#tools [data-tool][aria-pressed=true]').length"),1);await evaluate("document.querySelector('#tools [data-tool=paint]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))");assert.equal(await evaluate("document.querySelector('#tools [data-tool=rectangle]').getAttribute('aria-pressed')"),'true');await click('#tools [data-tool="select"]');
   // Menu navigation, dismissals and modal cancellation do not change the project source.
   await click('#projectButton');assert.equal(await evaluate("document.getElementById('projectMenu').hidden"),false);
   await evaluate("document.getElementById('projectButton').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))");assert.equal(await evaluate("document.getElementById('viewMenu').hidden"),false);assert.equal(await evaluate("document.getElementById('projectMenu').hidden"),true);
@@ -111,6 +111,29 @@ try{
   async function screen(x,y){return evaluate(`(()=>{const canvas=document.getElementById('canvas'),r=canvas.getBoundingClientRect(),m=canvas.getContext('2d').getTransform(),d=devicePixelRatio||1;return{x:r.left+(m.e+${x}*m.a)/d,y:r.top+(m.f+${y}*m.d)/d};})()`);}
 
   async function drag(a,b){const start=await screen(...a),end=await screen(...b);await call('Input.dispatchMouseEvent',{type:'mousePressed',...start,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseMoved',...end,button:'left',buttons:1});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...end,button:'left',clickCount:1});}
+  await click('#fit');
+  const autoBefore=await bundle(),actor=autoBefore.levels.atrium.layers.find(l=>l.id==='actors').objects[0];
+  const actorPoint=[actor.x+actor.width/2,actor.y+actor.height/2];
+  assert.equal(await evaluate("document.getElementById('autoSelectLayer').checked"),false);
+  await click('#selectOptionsButton');assert.equal(await evaluate("document.getElementById('selectOptionsMenu').hidden"),false);
+  await click('#autoSelectLayer');assert.equal(await evaluate("JSON.parse(localStorage.getItem('editor2D.workspace')).autoSelectLayer"),true);
+  await evaluate("document.getElementById('autoSelectLayer').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  assert.equal(await evaluate("document.getElementById('selectOptionsMenu').hidden"),true);
+  await click('#layers [data-layer=ground] .name');await drag(actorPoint,actorPoint);
+  assert.equal(await evaluate("document.querySelector('#layers [data-layer=actors]').classList.contains('active-layer')"),true);
+  assert.deepEqual(await bundle(),autoBefore);
+  await click('#layers [data-layer=actors] [data-state=locked]');await click('#layers [data-layer=ground] .name');await drag(actorPoint,actorPoint);
+  assert.equal(await evaluate("document.querySelector('#layers [data-layer=actors]').classList.contains('active-layer')"),false);
+  await click('#layers [data-layer=actors] [data-state=locked]');
+  await click('#layers [data-layer=actors] [data-state=visible]');await click('#layers [data-layer=ground] .name');await drag(actorPoint,actorPoint);
+  assert.equal(await evaluate("document.querySelector('#layers [data-layer=actors]').classList.contains('active-layer')"),false);
+  await click('#layers [data-layer=actors] [data-state=visible]');
+  await click('#selectOptionsButton');await click('#autoSelectLayer');await click('#selectOptionsButton');
+  await click('#layers [data-layer=ground] .name');await drag(actorPoint,actorPoint);
+  assert.equal(await evaluate("document.querySelector('#layers [data-layer=ground]').classList.contains('active-layer')"),true);
+  assert.deepEqual(await bundle(),autoBefore);
+  await click('#undo');await click('#undo');await click('#undo');await click('#undo');assert.deepEqual(await bundle(),autoBefore);
+  console.log('Auto Select Layer passed: dropdown, local preference, cross-layer object selection, locks, visibility and disabled scope.');
   await click('#fit');await click('#layers .layer-card[data-layer=decoration] .name');await change('#tool','paint');await click('#snap');const beforePixels=await bundle();await drag([140,75],[153,80]);let pixelData=await bundle();const pixelTile=pixelData.levels.atrium.layers[1].tiles.find(t=>t.x===141&&t.y===69);assert.ok(pixelTile);assert.equal(pixelTile.width,32);assert.equal(pixelTile.height,32);assert.equal(await evaluate("document.querySelector('[aria-label=\"Tile X\"]').value"),'141');await drag([153,80],[153,80]);assert.deepEqual(await bundle(),pixelData);await click('#undo');assert.deepEqual(await bundle(),beforePixels);await click('#redo');assert.deepEqual(await bundle(),pixelData);await click('#undo');
   await change('#tool','paint');await drag([100,130],[100,130]);pixelData=await bundle();assert.ok(pixelData.levels.atrium.layers[1].tiles.some(t=>t.x===100&&t.y===130&&t.width===32));await click('#undo');assert.deepEqual(await bundle(),beforePixels);await click('#snap');
   await change('#tool','paint');const tilePaintBefore=await bundle();await drag([140,75],[140,75]);assert.deepEqual(await bundle(),tilePaintBefore);const altTilePoint=await screen(140,75);await call('Input.dispatchMouseEvent',{type:'mousePressed',...altTilePoint,button:'left',clickCount:1,modifiers:1});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...altTilePoint,button:'left',clickCount:1,modifiers:1});const repainted=await bundle(),tileBefore=tilePaintBefore.levels.atrium.layers[1].tiles.find(t=>t.x===128&&t.y===64),tileAfter=repainted.levels.atrium.layers[1].tiles.find(t=>t.x===128&&t.y===64);assert.equal(repainted.levels.atrium.layers[1].tiles.length,tilePaintBefore.levels.atrium.layers[1].tiles.length);assert.equal(tileAfter.width,tileBefore.width);assert.equal(tileAfter.height,tileBefore.height);assert.notEqual(tileAfter.type,tileBefore.type);await click('#undo');assert.deepEqual(await bundle(),tilePaintBefore);
@@ -134,6 +157,24 @@ try{
   await click('#selectCameraBounds');await drag([c.x,c.y],[c.x+32,c.y+32]);let cameraMoved=await bundle();assert.equal(cameraMoved.levels.atrium.settings.camera.x,Math.round((c.x+32)/32)*32);await click('#undo');
   await click('#selectLevelBounds');const cancelA=await screen(800,240),cancelB=await screen(832,240);await call('Input.dispatchMouseEvent',{type:'mousePressed',...cancelA,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseMoved',...cancelB,button:'left',buttons:1});await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await call('Input.dispatchMouseEvent',{type:'mouseReleased',...cancelB,button:'left',clickCount:1});assert.deepEqual(await bundle(),boundsBefore);await click('#fit');
   console.log('Selection targets passed: centered level resize/content shift, aspect ratio, camera zoom/movement, undo and cancellation.');
+  const cameraToolbarBefore=await bundle();
+  await click('#tools [data-tool=paint]');await click('#selectCameraToolbar');
+  assert.equal(await evaluate("document.getElementById('selectionHeading').textContent"),'Camera');
+  assert.equal(await evaluate("document.getElementById('selectCameraToolbar').getAttribute('aria-pressed')"),'true');
+  assert.equal(await evaluate("document.querySelector('#tools [data-tool=select]').getAttribute('aria-pressed')"),'true');
+  await click('#cameraOptionsButton');await click('#showCameraElement');
+  assert.equal(await evaluate("document.getElementById('cameraOverlay').checked"),false);
+  assert.equal(await evaluate("document.getElementById('targetNotice').hidden"),true);
+  assert.equal(await evaluate("document.getElementById('selectCameraToolbar').getAttribute('aria-pressed')"),'false');
+  assert.equal(await evaluate("JSON.parse(localStorage.getItem('editor2D.workspace')).camera"),false);
+  await evaluate("document.getElementById('showCameraElement').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  assert.equal(await evaluate("document.getElementById('cameraOptionsMenu').hidden"),true);
+  await click('#selectCameraToolbar');assert.equal(await evaluate("document.getElementById('showCameraElement').checked"),true);
+  await click('#cameraOverlay');assert.equal(await evaluate("document.getElementById('showCameraElement').checked"),false);
+  await click('#cameraOverlay');assert.equal(await evaluate("document.getElementById('showCameraElement').checked"),true);
+  assert.deepEqual(await bundle(),cameraToolbarBefore);
+  assert.deepEqual(await evaluate("[getComputedStyle(document.getElementById('selectOptionsButton')).width,getComputedStyle(document.getElementById('cameraOptionsButton')).width]"),['24px','24px']);
+  console.log('Camera toolbar passed: camera selection, Select/move activation, synchronized visibility, persistence, Escape and narrow dropdowns.');
   const cameraHideBefore=await bundle();await click('#selectCameraBounds');const selectedCameraImage=await evaluate("document.getElementById('canvas').toDataURL()");await click('#cameraOverlay');assert.equal(await evaluate("document.getElementById('cameraOverlay').checked"),false);assert.equal(await evaluate("document.getElementById('targetNotice').hidden"),true);assert.ok(await evaluate("document.getElementById('canvas').toDataURL()")!==selectedCameraImage);await click('#selectCameraBounds');assert.equal(await evaluate("document.getElementById('cameraOverlay').checked"),true);assert.deepEqual(await bundle(),cameraHideBefore);await evaluate("document.getElementById('canvas').focus()");await call('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
   // Workspace controls change the view only, persist locally, and remain keyboard accessible.
   const workspaceBefore=await bundle();
@@ -203,6 +244,34 @@ try{
   await click('#layers [data-layer="'+bgId+'"] .layer-toggle');const preParallax=await bundle(),preBg=preParallax.levels.garden.layers.at(-1).objects[0],cc=preParallax.levels.garden.settings.camera,vp=preParallax.settings.viewport,zz=preParallax.levels.garden.settings.cameraZoom,origin={x:cc.x-vp.width/zz/2,y:cc.y-vp.height/zz/2};await change('#layers [data-layer="'+bgId+'"] [aria-label="Parallax X"]','0');await change('#layers [data-layer="'+bgId+'"] [aria-label="Parallax Y"]','0.5');bg=(await bundle()).levels.garden.layers.at(-1).objects[0];assert.equal(bg.x+origin.x,preBg.x);assert.equal(bg.y+origin.y*.5,preBg.y);
   await change('#tool','select');await drag([preBg.x+20,preBg.y+20],[preBg.x+52,preBg.y+44]);assert.equal((await bundle()).levels.garden.layers.at(-1).objects.length,1);assert.notEqual((await bundle()).levels.garden.layers.at(-1).objects[0].x,bg.x);const savedBg=await bundle();await click('#save');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Saved 4')"),'Background save failed');assert.deepEqual(JSON.parse(await readFile(join(temporary,'project/data/levels/garden.json'),'utf8')),savedBg.levels.garden);await call('Page.reload');await until(()=>evaluate("document.getElementById('status').textContent==='Project loaded.'"),'Background reload failed');assert.deepEqual((await bundle()).levels.garden,savedBg.levels.garden);console.log('Backgrounds passed: v3 creation, image scale/link, repeat/flip, independent bounds, parallax preservation, picking and save/reload.');
   // Import/export works without the local write API and preserves extension values.
+  // Auto picking must yield to explicit targets even over a full-level foreground Background.
+  await click('#selectOptionsButton');await click('#autoSelectLayer');await click('#selectOptionsButton');
+  await call('Page.reload');await until(()=>evaluate("document.getElementById('status').textContent==='Project loaded.'"),'Auto-select preference reload failed');
+  assert.equal(await evaluate("document.getElementById('autoSelectLayer').checked"),true);
+  await change('#levels','garden');await click('#fit');
+  const priorityBefore=await bundle(),priorityLayer=priorityBefore.levels.garden.layers.at(-1);
+  await click('#layers [data-layer='+priorityLayer.id+'] .name');
+  const priorityObject=priorityLayer.objects[0],priorityCamera=priorityBefore.levels.garden.settings,priorityViewport=priorityBefore.settings.viewport;
+  const offset={x:(1-priorityLayer.parallax.x)*(priorityCamera.camera.x-priorityViewport.width/priorityCamera.cameraZoom/2),y:(1-priorityLayer.parallax.y)*(priorityCamera.camera.y-priorityViewport.height/priorityCamera.cameraZoom/2)};
+  const priorityPoint=[priorityObject.x+offset.x+20,priorityObject.y+offset.y+20];
+  await drag(priorityPoint,priorityPoint);
+  for(const [label,value] of [['x',String(-offset.x)],['y',String(-offset.y)],['width','2000'],['height','2000']])await change('#properties [aria-label="'+label+'"]',value);
+  const covered=await bundle(),pc=covered.levels.garden.settings.camera,pz=covered.levels.garden.settings.cameraZoom,pv=covered.settings.viewport;
+  await click('#selectCameraBounds');await drag([pc.x,pc.y],[pc.x+32,pc.y+32]);
+  assert.notDeepEqual((await bundle()).levels.garden.settings.camera,pc);
+  assert.deepEqual((await bundle()).levels.garden.layers,covered.levels.garden.layers);await click('#undo');
+  await click('#selectCameraBounds');await drag([pc.x+pv.width/pz/2,pc.y],[pc.x+pv.width/pz/2+32,pc.y]);
+  assert.notEqual((await bundle()).levels.garden.settings.cameraZoom,pz);await click('#undo');
+  await click('#selectLevelBounds');const pw=covered.levels.garden.width,ph=covered.levels.garden.height;
+  await drag([pw,ph/2],[pw+32,ph/2]);assert.equal((await bundle()).levels.garden.width,pw+32);await click('#undo');
+  await click('#layers [data-layer='+priorityLayer.id+'] .name');
+  const edgePoint=await screen(0,300);await call('Input.dispatchMouseEvent',{type:'mouseMoved',...edgePoint});
+  assert.equal(await evaluate("document.getElementById('canvas').style.cursor"),'default');
+  await drag([10,300],[10,300]);await call('Input.dispatchMouseEvent',{type:'mouseMoved',...await screen(0,0)});
+  assert.equal(await evaluate("document.getElementById('canvas').style.cursor"),'nwse-resize');
+  for(let i=0;i<4;i++)await click('#undo');assert.deepEqual(await bundle(),priorityBefore);
+  await click('#selectOptionsButton');await click('#autoSelectLayer');await click('#selectOptionsButton');
+  console.log('Auto-selection priority passed: enabled preference reload, camera move/resize, level handles over Backgrounds and matching resize cursors.');
   const exported=await bundle();await evaluate(`(()=>{const input=document.getElementById('import'),dt=new DataTransfer();dt.items.add(new File([${JSON.stringify(JSON.stringify(exported))}],'roundtrip.json',{type:'application/json'}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()`);await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Bundle imported')"),'Bundle import failed');assert.deepEqual(await bundle(),exported);
   await click('#load');await until(()=>evaluate("document.getElementById('status').textContent.startsWith('Enter a project manifest URL')"),'Imported bundle should require a manifest URL for HTTP loading');
   await change('#manifest',url.split('?project=')[1]);await click('#load');await until(()=>evaluate("document.getElementById('status').textContent==='Project loaded.'"),'Server project reload after import failed');

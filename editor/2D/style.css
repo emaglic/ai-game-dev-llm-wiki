@@ -147,3 +147,9 @@ main:has(#leftDivider[hidden]):has(#rightDivider[hidden]){grid-template-columns:
 .position-fields{display:flex;flex-wrap:wrap;gap:8px}.position-axis{display:grid;gap:5px;flex:1 1 96px;min-width:0}.position-axis input{min-width:0}
 
 .layer-header-state[data-state=solo][aria-pressed=true]{background:#356877;box-shadow:inset 0 0 0 1px #64dec6}
+
+.select-options{position:relative;display:inline-flex;gap:0}
+.select-options>[data-tool],#selectCameraToolbar{border-top-right-radius:0;border-bottom-right-radius:0}
+#tools #selectOptionsButton,#tools #cameraOptionsButton{width:24px;padding:2px;border-left:0;border-top-left-radius:0;border-bottom-left-radius:0}
+#selectOptionsButton .material-icon,#cameraOptionsButton .material-icon{width:16px;height:16px}
+#selectOptionsMenu,#cameraOptionsMenu{top:calc(100% + 4px);left:0;white-space:nowrap}
